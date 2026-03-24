@@ -43,4 +43,17 @@ describe('strategyStorage', () => {
     expect(nextBacktest).toHaveLength(1)
     expect(nextLive).toHaveLength(live.length)
   })
+
+  test('normalizes missing attachments on legacy records', () => {
+    const legacy = JSON.parse(JSON.stringify(loadStrategies('backtest'))) as Array<{
+      detail: { attachments?: unknown }
+    }>
+    legacy.forEach((item) => {
+      item.detail.attachments = undefined
+    })
+    localStorage.setItem('strategy-lab/backtest', JSON.stringify(legacy))
+
+    const normalized = loadStrategies('backtest')
+    expect(Array.isArray(normalized[0].detail.attachments)).toBe(true)
+  })
 })

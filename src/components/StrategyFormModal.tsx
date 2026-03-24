@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import type {
   BacktestStrategyRecord,
   LiveStrategyRecord,
@@ -55,8 +55,8 @@ const defaultDates = [
 
 function buildDefaultDetail() {
   return {
-    description: 'Please provide strategy description.',
-    logic: 'Please provide strategy logic.',
+    description: '请补充策略说明。',
+    logic: '请补充策略逻辑。',
     params: {
       rebalanceFreq: 'weekly',
     },
@@ -72,7 +72,8 @@ function buildDefaultDetail() {
       month,
       return: defaultMonthlyReturns[index],
     })),
-    riskNotes: ['Please add main risk notes.'],
+    riskNotes: ['请补充主要风险提示。'],
+    attachments: [],
   }
 }
 
@@ -168,17 +169,22 @@ function buildId(channel: StrategyChannel) {
 
 function metricLabels(channel: StrategyChannel) {
   if (channel === 'backtest') {
-    return [
-      'Annual Return',
-      'Sharpe',
-      'Max Drawdown',
-      'Win Rate',
-      'Trade Count',
-      'Volatility',
-    ]
+    return ['年化收益', '夏普比率', '最大回撤', '胜率', '交易次数', '波动率']
   }
-  return ['Total Return', 'Alpha', 'Max Drawdown', 'Running Days', 'Positions', 'Monthly Win Rate']
+  return ['累计收益', 'Alpha', '最大回撤', '运行天数', '持仓数量', '月胜率']
 }
+
+const riskLevelOptions = [
+  { value: 'low', label: '低风险' },
+  { value: 'medium', label: '中风险' },
+  { value: 'high', label: '高风险' },
+] as const
+
+const statusOptions = [
+  { value: 'active', label: '运行中' },
+  { value: 'paused', label: '已暂停' },
+  { value: 'archived', label: '已归档' },
+] as const
 
 export function StrategyFormModal({
   channel,
@@ -189,11 +195,7 @@ export function StrategyFormModal({
   const [form, setForm] = useState<StrategyFormState>(() =>
     toFormState(channel, editing),
   )
-  const [error, setError] = useState<string>('')
-
-  useEffect(() => {
-    setForm(toFormState(channel, editing))
-  }, [channel, editing])
+  const [error, setError] = useState('')
 
   const labels = metricLabels(channel)
 
@@ -204,7 +206,7 @@ export function StrategyFormModal({
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!form.name.trim() || !form.author.trim() || !form.summary.trim()) {
-      setError('Name, author, and summary are required.')
+      setError('策略名称、作者、摘要为必填项')
       return
     }
 
@@ -230,6 +232,7 @@ export function StrategyFormModal({
           ...detail.params,
           ...parseParams(form.paramsText),
         },
+        attachments: detail.attachments ?? [],
       },
     }
 
@@ -272,18 +275,18 @@ export function StrategyFormModal({
         className="modal-panel"
         role="dialog"
         aria-modal="true"
-        aria-label={editing ? 'Edit strategy' : 'Create strategy'}
+        aria-label={editing ? '编辑策略' : '新增策略'}
         onClick={(event) => event.stopPropagation()}
       >
         <header className="modal-header">
-          <h2>{editing ? 'Edit Strategy' : 'Create Strategy'}</h2>
-          <button className="icon-btn" type="button" onClick={onClose} aria-label="Close">
-            x
+          <h2>{editing ? '编辑策略' : '新增策略'}</h2>
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="关闭">
+            ×
           </button>
         </header>
         <form className="strategy-form" onSubmit={submit}>
           <label>
-            Strategy Name
+            策略名称
             <input
               value={form.name}
               onChange={(event) => updateField('name', event.target.value)}
@@ -291,7 +294,7 @@ export function StrategyFormModal({
             />
           </label>
           <label>
-            Author
+            作者
             <input
               value={form.author}
               onChange={(event) => updateField('author', event.target.value)}
@@ -299,15 +302,15 @@ export function StrategyFormModal({
             />
           </label>
           <label>
-            Tags (comma separated)
+            标签（逗号分隔）
             <input
               value={form.tags}
               onChange={(event) => updateField('tags', event.target.value)}
-              placeholder="trend,low-vol,index"
+              placeholder="趋势,低波,指数增强"
             />
           </label>
           <label>
-            Summary
+            摘要
             <input
               value={form.summary}
               onChange={(event) => updateField('summary', event.target.value)}
@@ -316,7 +319,7 @@ export function StrategyFormModal({
           </label>
           <div className="form-inline">
             <label>
-              Risk Level
+              风险等级
               <select
                 value={form.riskLevel}
                 onChange={(event) =>
@@ -326,13 +329,15 @@ export function StrategyFormModal({
                   }))
                 }
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                {riskLevelOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
-              Status
+              状态
               <select
                 value={form.status}
                 onChange={(event) =>
@@ -342,14 +347,16 @@ export function StrategyFormModal({
                   }))
                 }
               >
-                <option value="active">Active</option>
-                <option value="paused">Paused</option>
-                <option value="archived">Archived</option>
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
           <label>
-            Description
+            策略说明
             <textarea
               rows={2}
               value={form.description}
@@ -357,7 +364,7 @@ export function StrategyFormModal({
             />
           </label>
           <label>
-            Logic
+            核心逻辑
             <textarea
               rows={2}
               value={form.logic}
@@ -365,7 +372,7 @@ export function StrategyFormModal({
             />
           </label>
           <label>
-            Params (each line: key:value)
+            参数（每行 key:value）
             <textarea
               rows={3}
               value={form.paramsText}
@@ -387,17 +394,17 @@ export function StrategyFormModal({
               )
             })}
           </div>
-          {error && (
+          {error ? (
             <p role="alert" className="form-error">
               {error}
             </p>
-          )}
+          ) : null}
           <div className="form-actions">
             <button className="btn btn-secondary" type="button" onClick={onClose}>
-              Cancel
+              取消
             </button>
             <button className="btn btn-primary" type="submit">
-              {editing ? 'Save Changes' : 'Create Strategy'}
+              {editing ? '保存修改' : '新增策略'}
             </button>
           </div>
         </form>

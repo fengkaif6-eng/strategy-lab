@@ -48,7 +48,9 @@ export function PlazaPage({ channel, title }: PlazaPageProps) {
       <section className="section-panel">
         <div className="section-head">
           <h1>{title}</h1>
-          <p>展示全部{channel === 'backtest' ? '回测' : '实盘'}策略与核心指标。</p>
+          <p>
+            展示全部{channel === 'backtest' ? '孵化' : '已发布'}策略的关键指标与收益走势。
+          </p>
         </div>
         <div className="toolbar">
           <label>
@@ -94,7 +96,7 @@ export function PlazaPage({ channel, title }: PlazaPageProps) {
       {list.length === 0 ? (
         <section className="empty-panel">
           <h2>暂无匹配策略</h2>
-          <p>请调整筛选条件或在策略管理页新增策略。</p>
+          <p>请调整筛选条件后重试。</p>
         </section>
       ) : (
         <section className="card-grid" aria-label={`${title}策略列表`}>

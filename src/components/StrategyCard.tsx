@@ -2,10 +2,21 @@ import { Link } from 'react-router-dom'
 import type { StrategyRecord } from '../types/strategy'
 import { formatDate, formatPercent, formatSigned } from '../utils/format'
 import { MetricChip } from './MetricChip'
+import { Sparkline } from './Sparkline'
 
 interface StrategyCardProps {
   strategy: StrategyRecord
   compact?: boolean
+}
+
+function statusLabel(status: StrategyRecord['status']) {
+  if (status === 'active') {
+    return '运行中'
+  }
+  if (status === 'paused') {
+    return '已暂停'
+  }
+  return '已归档'
 }
 
 export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
@@ -63,13 +74,17 @@ export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
           <p>{strategy.summary}</p>
         </div>
         <span className={`status-badge status-${strategy.status}`}>
-          {strategy.status === 'active'
-            ? '运行中'
-            : strategy.status === 'paused'
-              ? '已暂停'
-              : '已归档'}
+          {statusLabel(strategy.status)}
         </span>
       </header>
+
+      <div className="sparkline-wrap">
+        <span>收益走势</span>
+        <Sparkline
+          className="strategy-sparkline"
+          values={strategy.detail.equityCurve.map((point) => point.value)}
+        />
+      </div>
 
       <div className="tag-row">
         {strategy.tags.map((tag) => (
@@ -92,8 +107,8 @@ export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
 
       <footer className="strategy-card-footer">
         <div className="strategy-meta">
-          <span>作者 {strategy.author}</span>
-          <span>更新于 {formatDate(strategy.updatedAt)}</span>
+          <span>作者：{strategy.author}</span>
+          <span>更新于：{formatDate(strategy.updatedAt)}</span>
         </div>
         <Link
           className="btn btn-secondary"

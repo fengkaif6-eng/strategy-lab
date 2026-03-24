@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="158" viewBox="0 0 512 158" role="img" aria-labelledby="title desc">
+  <title id="title">国泰海通 Logo</title>
+  <desc id="desc">国泰海通文字与图形标识</desc>
+  <rect width="512" height="158" rx="10" fill="#ffffff"/>
+  <polygon points="22,80 58,56 120,56 156,80 120,104 58,104" fill="#0b4f93"/>
+  <polygon points="62,64 90,64 116,80 90,96 62,96" fill="#5cb2de"/>
+  <polygon points="90,64 116,64 142,80 116,96 90,96" fill="#d6effa"/>
+  <text x="175" y="84" font-size="52" font-weight="700" fill="#0b4f93" font-family="'Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif">国泰海通</text>
+  <text x="176" y="122" font-size="28" letter-spacing="4" fill="#1a4f8e" font-family="'Arial',sans-serif">GUOTAI HAITONG</text>
+</svg>

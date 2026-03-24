@@ -40,6 +40,30 @@ function writeStorage<T>(key: string, data: T) {
   localStorage.setItem(key, JSON.stringify(data))
 }
 
+function normalizeBacktest(record: BacktestStrategyRecord): BacktestStrategyRecord {
+  return {
+    ...record,
+    detail: {
+      ...record.detail,
+      attachments: Array.isArray(record.detail.attachments)
+        ? record.detail.attachments
+        : [],
+    },
+  }
+}
+
+function normalizeLive(record: LiveStrategyRecord): LiveStrategyRecord {
+  return {
+    ...record,
+    detail: {
+      ...record.detail,
+      attachments: Array.isArray(record.detail.attachments)
+        ? record.detail.attachments
+        : [],
+    },
+  }
+}
+
 export function loadStrategies(channel: 'backtest'): BacktestStrategyRecord[]
 export function loadStrategies(channel: 'live'): LiveStrategyRecord[]
 export function loadStrategies(channel: StrategyChannel) {
@@ -47,9 +71,11 @@ export function loadStrategies(channel: StrategyChannel) {
     const key = STORAGE_KEYS.backtest
     const fromStorage = readStorage<BacktestStrategyRecord[]>(key)
     if (fromStorage) {
-      return fromStorage
+      const normalized = fromStorage.map(normalizeBacktest)
+      writeStorage(key, normalized)
+      return normalized
     }
-    const seed = getSeedByChannel(channel)
+    const seed = getSeedByChannel(channel).map(normalizeBacktest)
     writeStorage(key, seed)
     return seed
   }
@@ -57,9 +83,11 @@ export function loadStrategies(channel: StrategyChannel) {
   const key = STORAGE_KEYS.live
   const fromStorage = readStorage<LiveStrategyRecord[]>(key)
   if (fromStorage) {
-    return fromStorage
+    const normalized = fromStorage.map(normalizeLive)
+    writeStorage(key, normalized)
+    return normalized
   }
-  const seed = getSeedByChannel(channel)
+  const seed = getSeedByChannel(channel).map(normalizeLive)
   writeStorage(key, seed)
   return seed
 }
@@ -93,22 +121,24 @@ export function saveStrategies(
 export function upsertStrategy(strategy: StrategyRecord): StrategyRecord[] {
   if (strategy.channel === 'backtest') {
     const current = loadStrategies('backtest')
-    const index = current.findIndex((item) => item.id === strategy.id)
+    const normalized = normalizeBacktest(strategy)
+    const index = current.findIndex((item) => item.id === normalized.id)
     if (index >= 0) {
-      current[index] = strategy
+      current[index] = normalized
     } else {
-      current.unshift(strategy)
+      current.unshift(normalized)
     }
     saveStrategies('backtest', current)
     return current
   }
 
   const current = loadStrategies('live')
-  const index = current.findIndex((item) => item.id === strategy.id)
+  const normalized = normalizeLive(strategy)
+  const index = current.findIndex((item) => item.id === normalized.id)
   if (index >= 0) {
-    current[index] = strategy
+    current[index] = normalized
   } else {
-    current.unshift(strategy)
+    current.unshift(normalized)
   }
   saveStrategies('live', current)
   return current

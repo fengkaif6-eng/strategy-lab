@@ -74,6 +74,7 @@ export const seedBacktestStrategies: BacktestStrategyRecord[] = [
         0.018, 0.016,
       ]),
       riskNotes: ['对快速反转行情敏感', '行业集中度上限 30%', '极端波动日可能降低仓位'],
+      attachments: [],
     },
   },
   {
@@ -116,6 +117,7 @@ export const seedBacktestStrategies: BacktestStrategyRecord[] = [
         0.016, 0.015,
       ]),
       riskNotes: ['高换手导致冲击成本增加', '流动性约束需严格执行', '风格切换时波动较大'],
+      attachments: [],
     },
   },
   {
@@ -158,6 +160,7 @@ export const seedBacktestStrategies: BacktestStrategyRecord[] = [
         0.008, 0.006,
       ]),
       riskNotes: ['上涨行情中可能跑输成长风格', '组合集中在高分红行业', '分红政策变化影响较大'],
+      attachments: [],
     },
   },
   {
@@ -199,6 +202,7 @@ export const seedBacktestStrategies: BacktestStrategyRecord[] = [
         0.023, 0.018,
       ]),
       riskNotes: ['情绪模型存在噪声风险', '突发事件可能导致滑点放大', '需监控模型漂移'],
+      attachments: [],
     },
   },
 ]
@@ -243,6 +247,7 @@ export const seedLiveStrategies: LiveStrategyRecord[] = [
         0.004, 0.003,
       ]),
       riskNotes: ['风控阈值触发后会降低持仓', '成交量低时执行偏差上升'],
+      attachments: [],
     },
   },
   {
@@ -284,6 +289,7 @@ export const seedLiveStrategies: LiveStrategyRecord[] = [
         0.013, 0.011,
       ]),
       riskNotes: ['突破失败会导致连续小亏', '对成交量数据质量敏感'],
+      attachments: [],
     },
   },
   {
@@ -325,6 +331,7 @@ export const seedLiveStrategies: LiveStrategyRecord[] = [
         0.004, 0.005,
       ]),
       riskNotes: ['暂停期间不进行新开仓', '行业景气变化可能带来再平衡压力'],
+      attachments: [],
     },
   },
   {
@@ -366,6 +373,7 @@ export const seedLiveStrategies: LiveStrategyRecord[] = [
         0.008, 0.007,
       ]),
       riskNotes: ['事件拥挤时收益衰减明显', '依赖盘口质量，需控制滑点'],
+      attachments: [],
     },
   },
 ]

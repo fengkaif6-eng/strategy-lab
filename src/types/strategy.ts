@@ -12,6 +12,15 @@ export interface MonthlyReturn {
   return: number
 }
 
+export interface StrategyAttachment {
+  id: string
+  title: string
+  url: string
+  note?: string
+  createdAt: string
+  createdBy: string
+}
+
 export interface StrategyDetail {
   description: string
   logic: string
@@ -20,6 +29,7 @@ export interface StrategyDetail {
   drawdownCurve: CurvePoint[]
   monthlyReturns: MonthlyReturn[]
   riskNotes: string[]
+  attachments: StrategyAttachment[]
 }
 
 export interface StrategyBase {

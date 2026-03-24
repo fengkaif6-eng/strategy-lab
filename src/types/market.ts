@@ -13,3 +13,9 @@ export interface MarketTickerQuote {
   price: number
   changePct: number
 }
+
+export interface MarketIntradayPoint {
+  time: string
+  price: number
+  volume: number
+}

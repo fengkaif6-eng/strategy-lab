@@ -13,8 +13,8 @@
   --color-text-muted: #c4d0e6;
   --color-border: rgba(201, 220, 255, 0.18);
   --color-danger: #ef4444;
-  --color-profit: #22c55e;
-  --color-loss: #ef4444;
+  --color-profit: #ef4444;
+  --color-loss: #22c55e;
   --color-shadow: rgba(0, 0, 0, 0.35);
   --font-sans: 'IBM Plex Sans', sans-serif;
   --font-mono: 'Fira Code', ui-monospace, monospace;

@@ -44,33 +44,47 @@ const contactItems = [
   { label: '办公地址', value: '北京市朝阳区（占位）' },
 ]
 
-function toMarketCurve(trend: number[]) {
-  if (trend.length === 0) {
-    return []
+function toMarketCurveFromIntraday(
+  intraday: { time: string; price: number }[],
+  fallbackTrend: number[],
+) {
+  if (intraday.length > 0) {
+    const baseline = intraday[0].price
+    return intraday.map((point) => ({
+      time: point.time,
+      value: point.price,
+      baseline,
+    }))
   }
-  const start = trend[0]
-  const end = trend[trend.length - 1]
-  return trend.map((value, index) => ({
-    idx: index + 1,
-    value,
-    baseline: start + ((end - start) * index) / Math.max(trend.length - 1, 1),
-  }))
+  if (fallbackTrend.length > 0) {
+    const baseline = fallbackTrend[0]
+    return fallbackTrend.map((value, index) => ({
+      time: String(index + 1),
+      value,
+      baseline,
+    }))
+  }
+  return []
 }
 
 export function HomePage() {
   const { role } = useAuth()
   const { stats, backtestStrategies, liveStrategies } = useStrategies()
-  const { indexes, tickers, loading, stale, updatedAt } = useMarketData()
+  const { indexes, tickers, shanghaiIntraday, loading, stale, updatedAt } = useMarketData()
 
   const featured = [...backtestStrategies.slice(0, 1), ...liveStrategies.slice(0, 1)]
   const ctaPath = role === 'guest' ? '/register' : '/incubation-strategies'
   const ctaText = role === 'guest' ? '立即注册查看策略' : '开始查看孵化策略'
   const primaryIndex = indexes.find((item) => item.code === '000001') ?? indexes[0]
-  const marketCurve = primaryIndex ? toMarketCurve(primaryIndex.trend) : []
+  const marketCurve = primaryIndex
+    ? toMarketCurveFromIntraday(shanghaiIntraday, primaryIndex.trend)
+    : []
   const marketHigh =
     marketCurve.length > 0 ? Math.max(...marketCurve.map((item) => item.value)) : 0
   const marketLow =
     marketCurve.length > 0 ? Math.min(...marketCurve.map((item) => item.value)) : 0
+  const isMarketUp = (primaryIndex?.change ?? 0) >= 0
+  const trendColor = isMarketUp ? '#ef4444' : '#22c55e'
 
   return (
     <div className="page-stack">
@@ -145,13 +159,13 @@ export function HomePage() {
             <AreaChart data={marketCurve}>
               <defs>
                 <linearGradient id="market-area" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#d4a340" stopOpacity={0.46} />
-                  <stop offset="100%" stopColor="#d4a340" stopOpacity={0.04} />
+                  <stop offset="0%" stopColor={trendColor} stopOpacity={0.46} />
+                  <stop offset="100%" stopColor={trendColor} stopOpacity={0.04} />
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="rgba(188,210,245,0.2)" strokeDasharray="4 4" />
               <XAxis
-                dataKey="idx"
+                dataKey="time"
                 tick={{ fill: '#c7d8f4', fontSize: 11 }}
                 axisLine={{ stroke: 'rgba(188,210,245,0.35)' }}
                 tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
@@ -176,7 +190,7 @@ export function HomePage() {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#ff7f7f"
+                stroke={trendColor}
                 strokeWidth={2.4}
                 fill="url(#market-area)"
                 dot={false}

@@ -1,4 +1,8 @@
-import type { MarketIndexQuote, MarketTickerQuote } from '../types/market'
+import type {
+  MarketIndexQuote,
+  MarketIntradayPoint,
+  MarketTickerQuote,
+} from '../types/market'
 
 const INDEX_SYMBOLS = ['s_sh000001', 's_sz399001', 's_sz399006', 's_sh000688']
 const TICKER_SYMBOLS = [
@@ -49,6 +53,17 @@ type ParsedQuote = {
   price: number
   change: number
   changePct: number
+}
+
+interface MinuteApiResponse {
+  data?: Record<
+    string,
+    {
+      data?: {
+        data?: string[]
+      }
+    }
+  >
 }
 
 async function fetchBySymbols(symbols: string[]) {
@@ -125,4 +140,35 @@ export async function fetchMarketTickers(): Promise<MarketTickerQuote[]> {
     changePct: item.changePct,
   }))
   return parsed.sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+}
+
+function toMinutePoint(raw: string): MarketIntradayPoint | null {
+  const [time, priceText, volumeText] = raw.split(' ')
+  if (!time || !priceText || !volumeText) {
+    return null
+  }
+  const price = Number(priceText)
+  const volume = Number(volumeText)
+  if (!Number.isFinite(price) || !Number.isFinite(volume)) {
+    return null
+  }
+  return {
+    time: `${time.slice(0, 2)}:${time.slice(2, 4)}`,
+    price,
+    volume,
+  }
+}
+
+export async function fetchShanghaiIntradayCurve(): Promise<MarketIntradayPoint[]> {
+  const symbol = 'sh000001'
+  const url = `https://web.ifzq.gtimg.cn/appstock/app/minute/query?code=${symbol}`
+  const response = await fetch(url, { cache: 'no-store' })
+  if (!response.ok) {
+    throw new Error(`分时接口请求失败: ${response.status}`)
+  }
+  const payload = (await response.json()) as MinuteApiResponse
+  const rows = payload.data?.[symbol]?.data?.data ?? []
+  return rows
+    .map((row) => toMinutePoint(row))
+    .filter((item): item is MarketIntradayPoint => item !== null)
 }

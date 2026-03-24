@@ -2,19 +2,26 @@ import { useEffect, useState } from 'react'
 import {
   fetchMarketIndexes,
   fetchMarketTickers,
+  fetchShanghaiIntradayCurve,
   normalizeCodeName,
 } from '../services/marketService'
-import type { MarketIndexQuote, MarketTickerQuote } from '../types/market'
+import type {
+  MarketIndexQuote,
+  MarketIntradayPoint,
+  MarketTickerQuote,
+} from '../types/market'
 
 interface MarketSnapshot {
   indexes: MarketIndexQuote[]
   tickers: MarketTickerQuote[]
+  shanghaiIntraday: MarketIntradayPoint[]
   updatedAt: string
 }
 
 interface MarketDataState {
   indexes: MarketIndexQuote[]
   tickers: MarketTickerQuote[]
+  shanghaiIntraday: MarketIntradayPoint[]
   loading: boolean
   stale: boolean
   updatedAt: string | null
@@ -31,7 +38,11 @@ function readSnapshot(): MarketSnapshot | null {
   }
   try {
     const parsed = JSON.parse(raw) as MarketSnapshot
-    if (!Array.isArray(parsed.indexes) || !Array.isArray(parsed.tickers)) {
+    if (
+      !Array.isArray(parsed.indexes) ||
+      !Array.isArray(parsed.tickers) ||
+      !Array.isArray(parsed.shanghaiIntraday)
+    ) {
       return null
     }
     return {
@@ -43,6 +54,7 @@ function readSnapshot(): MarketSnapshot | null {
         ...item,
         name: normalizeCodeName(item.code, item.name),
       })),
+      shanghaiIntraday: parsed.shanghaiIntraday,
       updatedAt: parsed.updatedAt,
     }
   } catch {
@@ -61,6 +73,7 @@ export function useMarketData() {
       return {
         indexes: [],
         tickers: [],
+        shanghaiIntraday: [],
         loading: true,
         stale: false,
         updatedAt: null,
@@ -69,6 +82,7 @@ export function useMarketData() {
     return {
       indexes: snapshot.indexes,
       tickers: snapshot.tickers,
+      shanghaiIntraday: snapshot.shanghaiIntraday,
       loading: true,
       stale: true,
       updatedAt: snapshot.updatedAt,
@@ -79,49 +93,67 @@ export function useMarketData() {
     let isActive = true
 
     const sync = async () => {
-      try {
-        const [latestIndexes, latestTickers] = await Promise.all([
-          fetchMarketIndexes(),
-          fetchMarketTickers(),
-        ])
+      const [indexesResult, tickersResult, intradayResult] = await Promise.allSettled([
+        fetchMarketIndexes(),
+        fetchMarketTickers(),
+        fetchShanghaiIntradayCurve(),
+      ])
 
-        if (!isActive) {
-          return
-        }
-
-        setState((previous) => {
-          const nextIndexes = latestIndexes.map((item) => {
-            const oldTrend =
-              previous.indexes.find((prev) => prev.code === item.code)?.trend ?? []
-            const trend = [...oldTrend, item.price].slice(-MAX_TREND_POINTS)
-            return {
-              ...item,
-              trend,
-            }
-          })
-
-          const snapshot: MarketSnapshot = {
-            indexes: nextIndexes,
-            tickers: latestTickers,
-            updatedAt: new Date().toISOString(),
-          }
-          writeSnapshot(snapshot)
-          return {
-            ...snapshot,
-            loading: false,
-            stale: false,
-          }
-        })
-      } catch {
-        if (!isActive) {
-          return
-        }
-        setState((previous) => ({
-          ...previous,
-          loading: false,
-          stale: previous.indexes.length > 0 || previous.tickers.length > 0,
-        }))
+      if (!isActive) {
+        return
       }
+
+      setState((previous) => {
+        const nextIndexes =
+          indexesResult.status === 'fulfilled'
+            ? indexesResult.value.map((item) => {
+                const oldTrend =
+                  previous.indexes.find((prev) => prev.code === item.code)?.trend ?? []
+                const trend = [...oldTrend, item.price].slice(-MAX_TREND_POINTS)
+                return {
+                  ...item,
+                  trend,
+                }
+              })
+            : previous.indexes
+
+        const nextTickers =
+          tickersResult.status === 'fulfilled'
+            ? tickersResult.value
+            : previous.tickers
+
+        const nextIntraday =
+          intradayResult.status === 'fulfilled' && intradayResult.value.length > 0
+            ? intradayResult.value
+            : previous.shanghaiIntraday
+
+        const hasFresh =
+          indexesResult.status === 'fulfilled' ||
+          tickersResult.status === 'fulfilled' ||
+          intradayResult.status === 'fulfilled'
+
+        const nextUpdatedAt = hasFresh
+          ? new Date().toISOString()
+          : previous.updatedAt ?? null
+
+        if (hasFresh) {
+          writeSnapshot({
+            indexes: nextIndexes,
+            tickers: nextTickers,
+            shanghaiIntraday: nextIntraday,
+            updatedAt: nextUpdatedAt ?? new Date().toISOString(),
+          })
+        }
+
+        return {
+          indexes: nextIndexes,
+          tickers: nextTickers,
+          shanghaiIntraday: nextIntraday,
+          loading: false,
+          stale: !hasFresh && (nextIndexes.length > 0 || nextTickers.length > 0),
+          updatedAt: nextUpdatedAt,
+        }
+      })
     }
 
     void sync()

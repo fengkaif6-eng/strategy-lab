@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   fetchMarketIndexes,
   fetchMarketTickers,
+  normalizeCodeName,
 } from '../services/marketService'
 import type { MarketIndexQuote, MarketTickerQuote } from '../types/market'
 
@@ -33,7 +34,17 @@ function readSnapshot(): MarketSnapshot | null {
     if (!Array.isArray(parsed.indexes) || !Array.isArray(parsed.tickers)) {
       return null
     }
-    return parsed
+    return {
+      indexes: parsed.indexes.map((item) => ({
+        ...item,
+        name: normalizeCodeName(item.code, item.name),
+      })),
+      tickers: parsed.tickers.map((item) => ({
+        ...item,
+        name: normalizeCodeName(item.code, item.name),
+      })),
+      updatedAt: parsed.updatedAt,
+    }
   } catch {
     return null
   }

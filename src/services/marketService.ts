@@ -12,6 +12,36 @@ const TICKER_SYMBOLS = [
   's_sz000333',
 ]
 
+const NAME_BY_SYMBOL: Record<string, string> = {
+  s_sh000001: '上证指数',
+  s_sz399001: '深证成指',
+  s_sz399006: '创业板指',
+  s_sh000688: '科创50',
+  s_sh600519: '贵州茅台',
+  s_sh601318: '中国平安',
+  s_sz000858: '五粮液',
+  s_sz300750: '宁德时代',
+  s_sz002594: '比亚迪',
+  s_sh601398: '工商银行',
+  s_sh688981: '中芯国际',
+  s_sz000333: '美的集团',
+}
+
+const NAME_BY_CODE: Record<string, string> = {
+  '000001': '上证指数',
+  '399001': '深证成指',
+  '399006': '创业板指',
+  '000688': '科创50',
+  '600519': '贵州茅台',
+  '601318': '中国平安',
+  '000858': '五粮液',
+  '300750': '宁德时代',
+  '002594': '比亚迪',
+  '601398': '工商银行',
+  '688981': '中芯国际',
+  '000333': '美的集团',
+}
+
 type ParsedQuote = {
   symbol: string
   name: string
@@ -27,12 +57,25 @@ async function fetchBySymbols(symbols: string[]) {
   if (!response.ok) {
     throw new Error(`行情接口请求失败: ${response.status}`)
   }
-  return response.text()
+  const buffer = await response.arrayBuffer()
+  try {
+    return new TextDecoder('gbk').decode(buffer)
+  } catch {
+    return new TextDecoder().decode(buffer)
+  }
 }
 
 function toNumber(value: string): number {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : 0
+}
+
+export function normalizeQuoteName(symbol: string, code: string, fallback: string) {
+  return NAME_BY_SYMBOL[symbol] ?? NAME_BY_CODE[code] ?? fallback
+}
+
+export function normalizeCodeName(code: string, fallback: string) {
+  return NAME_BY_CODE[code] ?? fallback
 }
 
 export function parseTencentQuotes(payload: string): ParsedQuote[] {
@@ -52,7 +95,7 @@ export function parseTencentQuotes(payload: string): ParsedQuote[] {
       }
       return {
         symbol,
-        name: fields[1],
+        name: normalizeQuoteName(symbol, fields[2], fields[1]),
         code: fields[2],
         price: toNumber(fields[3]),
         change: toNumber(fields[4]),

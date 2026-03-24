@@ -344,6 +344,44 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.market-hero-curve {
+  background:
+    linear-gradient(165deg, rgba(15, 42, 83, 0.98), rgba(8, 23, 48, 0.98)),
+    radial-gradient(circle at 20% 20%, rgba(100, 180, 255, 0.09), transparent 58%);
+}
+
+.market-hero-chart {
+  border-radius: 0.92rem;
+  border: 1px solid rgba(212, 163, 64, 0.24);
+  background: rgba(5, 16, 36, 0.58);
+  padding: 0.6rem;
+}
+
+.market-hero-kpis {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.market-hero-kpis article {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(188, 210, 245, 0.2);
+  background: rgba(9, 27, 53, 0.65);
+  padding: 0.62rem;
+}
+
+.market-hero-kpis article p {
+  font-size: 0.82rem;
+}
+
+.market-hero-kpis article strong {
+  margin-top: 0.16rem;
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 1.07rem;
+}
+
 .market-card {
   border-radius: 0.9rem;
   border: 1px solid rgba(212, 163, 64, 0.18);
@@ -466,22 +504,54 @@ button {
   font-size: 1.08rem;
 }
 
-.sparkline-wrap {
+.strategy-chart-panel {
   border: 1px solid rgba(212, 163, 64, 0.22);
   border-radius: 0.8rem;
   padding: 0.45rem 0.6rem;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 
-.sparkline-wrap span {
+.strategy-chart-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.strategy-chart-title-row span {
   font-size: 0.82rem;
   color: var(--color-text-muted);
 }
 
-.strategy-sparkline {
+.strategy-mini-chart {
   width: 100%;
-  height: 52px;
+  height: 180px;
+}
+
+.strategy-keypoints {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.strategy-keypoint {
+  border-radius: 0.68rem;
+  border: 1px solid rgba(188, 210, 245, 0.2);
+  background: rgba(7, 20, 42, 0.66);
+  padding: 0.42rem 0.5rem;
+}
+
+.strategy-keypoint p {
+  font-size: 0.78rem;
+}
+
+.strategy-keypoint strong {
+  margin-top: 0.12rem;
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #f2f6ff;
 }
 
 .tag-row {
@@ -1042,6 +1112,8 @@ textarea:focus-visible,
   .card-grid,
   .market-grid,
   .flip-grid,
+  .market-hero-kpis,
+  .strategy-keypoints,
   .contact-grid,
   .metric-grid,
   .metric-grid-wide,

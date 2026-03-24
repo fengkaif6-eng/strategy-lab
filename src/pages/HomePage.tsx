@@ -1,4 +1,13 @@
 import { Link } from 'react-router-dom'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { StrategyCard } from '../components/StrategyCard'
 import { Sparkline } from '../components/Sparkline'
 import { useAuth } from '../context/AuthContext'
@@ -20,7 +29,7 @@ const featureItems = [
   {
     title: '实盘表现跟踪',
     front: '持续跟踪已发布策略收益、alpha、回撤与运行天数。',
-    back: '策略卡直接展示收益小图，快速识别波动区间和运行稳定性。',
+    back: '策略卡直接展示收益图，快速识别波动区间和运行稳定性。',
   },
   {
     title: '策略知识沉淀',
@@ -35,6 +44,19 @@ const contactItems = [
   { label: '办公地址', value: '北京市朝阳区（占位）' },
 ]
 
+function toMarketCurve(trend: number[]) {
+  if (trend.length === 0) {
+    return []
+  }
+  const start = trend[0]
+  const end = trend[trend.length - 1]
+  return trend.map((value, index) => ({
+    idx: index + 1,
+    value,
+    baseline: start + ((end - start) * index) / Math.max(trend.length - 1, 1),
+  }))
+}
+
 export function HomePage() {
   const { role } = useAuth()
   const { stats, backtestStrategies, liveStrategies } = useStrategies()
@@ -43,6 +65,12 @@ export function HomePage() {
   const featured = [...backtestStrategies.slice(0, 1), ...liveStrategies.slice(0, 1)]
   const ctaPath = role === 'guest' ? '/register' : '/incubation-strategies'
   const ctaText = role === 'guest' ? '立即注册查看策略' : '开始查看孵化策略'
+  const primaryIndex = indexes.find((item) => item.code === '000001') ?? indexes[0]
+  const marketCurve = primaryIndex ? toMarketCurve(primaryIndex.trend) : []
+  const marketHigh =
+    marketCurve.length > 0 ? Math.max(...marketCurve.map((item) => item.value)) : 0
+  const marketLow =
+    marketCurve.length > 0 ? Math.min(...marketCurve.map((item) => item.value)) : 0
 
   return (
     <div className="page-stack">
@@ -102,6 +130,93 @@ export function HomePage() {
         </div>
       </section>
 
+      <section className="section-panel market-hero-curve">
+        <div className="section-head">
+          <div>
+            <h2>市场趋势大图</h2>
+            <p>展示 {primaryIndex?.name ?? '上证指数'} 最新波动曲线，包含基准参考线。</p>
+          </div>
+          <p className="market-time">
+            更新时间：{updatedAt ? new Date(updatedAt).toLocaleString('zh-CN') : '暂无'}
+          </p>
+        </div>
+        <div className="market-hero-chart">
+          <ResponsiveContainer width="100%" height={330}>
+            <AreaChart data={marketCurve}>
+              <defs>
+                <linearGradient id="market-area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#d4a340" stopOpacity={0.46} />
+                  <stop offset="100%" stopColor="#d4a340" stopOpacity={0.04} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(188,210,245,0.2)" strokeDasharray="4 4" />
+              <XAxis
+                dataKey="idx"
+                tick={{ fill: '#c7d8f4', fontSize: 11 }}
+                axisLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+                tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+              />
+              <YAxis
+                width={58}
+                tick={{ fill: '#c7d8f4', fontSize: 11 }}
+                tickFormatter={(value: number) => value.toFixed(0)}
+                axisLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+                tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+              />
+              <Tooltip
+                formatter={(value, key) => {
+                  const numeric = Number(value)
+                  const shown = Number.isFinite(numeric) ? numeric.toFixed(2) : '--'
+                  return key === 'baseline'
+                    ? [`${shown}（基准）`, '参考线']
+                    : [shown, primaryIndex?.name ?? '指数']
+                }}
+                labelFormatter={(label) => `序列点 ${label}`}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#ff7f7f"
+                strokeWidth={2.4}
+                fill="url(#market-area)"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="baseline"
+                stroke="#8ba7d8"
+                strokeWidth={1.6}
+                strokeDasharray="5 4"
+                fillOpacity={0}
+                dot={false}
+                activeDot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="market-hero-kpis">
+          <article>
+            <p>当前点位</p>
+            <strong>{primaryIndex ? primaryIndex.price.toFixed(2) : '--'}</strong>
+          </article>
+          <article>
+            <p>涨跌幅</p>
+            <strong className={primaryIndex && primaryIndex.changePct >= 0 ? 'text-profit' : 'text-loss'}>
+              {primaryIndex ? formatPercent(primaryIndex.changePct / 100) : '--'}
+            </strong>
+          </article>
+          <article>
+            <p>区间高点</p>
+            <strong>{marketCurve.length > 0 ? marketHigh.toFixed(2) : '--'}</strong>
+          </article>
+          <article>
+            <p>区间低点</p>
+            <strong>{marketCurve.length > 0 ? marketLow.toFixed(2) : '--'}</strong>
+          </article>
+        </div>
+      </section>
+
       <section className="section-panel">
         <div className="section-head">
           <div>
@@ -136,7 +251,6 @@ export function HomePage() {
       <section className="section-panel">
         <div className="section-head">
           <h2>核心功能</h2>
-          <p>鼠标悬停或聚焦卡片，可翻转查看功能详情。</p>
         </div>
         <div className="flip-grid">
           {featureItems.map((item) => (

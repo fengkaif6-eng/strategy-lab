@@ -1,8 +1,17 @@
 import { Link } from 'react-router-dom'
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceDot,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import type { StrategyRecord } from '../types/strategy'
 import { formatDate, formatPercent, formatSigned } from '../utils/format'
 import { MetricChip } from './MetricChip'
-import { Sparkline } from './Sparkline'
 
 interface StrategyCardProps {
   strategy: StrategyRecord
@@ -17,6 +26,10 @@ function statusLabel(status: StrategyRecord['status']) {
     return '已暂停'
   }
   return '已归档'
+}
+
+function formatValue(value: number) {
+  return value.toFixed(3)
 }
 
 export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
@@ -66,6 +79,13 @@ export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
           },
         ]
 
+  const curve = strategy.detail.equityCurve
+  const startPoint = curve[0]
+  const currentPoint = curve[curve.length - 1]
+  const peakPoint = curve.reduce((best, point) =>
+    point.value > best.value ? point : best,
+  )
+
   return (
     <article className={`strategy-card ${compact ? 'strategy-card-compact' : ''}`}>
       <header className="strategy-card-header">
@@ -78,12 +98,108 @@ export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
         </span>
       </header>
 
-      <div className="sparkline-wrap">
-        <span>收益走势</span>
-        <Sparkline
-          className="strategy-sparkline"
-          values={strategy.detail.equityCurve.map((point) => point.value)}
-        />
+      <div className="strategy-chart-panel">
+        <div className="strategy-chart-title-row">
+          <span>收益走势</span>
+          <span>横轴：时间 / 纵轴：净值</span>
+        </div>
+        <div className="strategy-mini-chart">
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={curve}>
+              <CartesianGrid stroke="rgba(188,210,245,0.25)" strokeDasharray="4 4" />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: '#c7d8f4', fontSize: 10 }}
+                axisLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+                tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+              />
+              <YAxis
+                tickFormatter={(value: number) => value.toFixed(2)}
+                tick={{ fill: '#c7d8f4', fontSize: 10 }}
+                width={42}
+                axisLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+                tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
+              />
+              <Tooltip
+                formatter={(value) => {
+                  const numeric = Number(value)
+                  return [`净值 ${Number.isFinite(numeric) ? formatValue(numeric) : '--'}`, '']
+                }}
+                labelFormatter={(label) => `时间 ${label}`}
+              />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#d4a340"
+                strokeWidth={2.2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+              {startPoint ? (
+                <ReferenceDot
+                  x={startPoint.date}
+                  y={startPoint.value}
+                  r={3}
+                  fill="#22c55e"
+                  label={{
+                    value: `起 ${formatValue(startPoint.value)}`,
+                    position: 'top',
+                    fill: '#8de9b2',
+                    fontSize: 10,
+                  }}
+                />
+              ) : null}
+              {peakPoint ? (
+                <ReferenceDot
+                  x={peakPoint.date}
+                  y={peakPoint.value}
+                  r={3}
+                  fill="#fbbf24"
+                  label={{
+                    value: `峰 ${formatValue(peakPoint.value)}`,
+                    position: 'top',
+                    fill: '#f8d48f',
+                    fontSize: 10,
+                  }}
+                />
+              ) : null}
+              {currentPoint ? (
+                <ReferenceDot
+                  x={currentPoint.date}
+                  y={currentPoint.value}
+                  r={3}
+                  fill="#60a5fa"
+                  label={{
+                    value: `现 ${formatValue(currentPoint.value)}`,
+                    position: 'right',
+                    fill: '#a8cbff',
+                    fontSize: 10,
+                  }}
+                />
+              ) : null}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="strategy-keypoints">
+          <div className="strategy-keypoint">
+            <p>起点</p>
+            <strong>
+              {startPoint?.date} | {startPoint ? formatValue(startPoint.value) : '-'}
+            </strong>
+          </div>
+          <div className="strategy-keypoint">
+            <p>峰值</p>
+            <strong>
+              {peakPoint?.date} | {peakPoint ? formatValue(peakPoint.value) : '-'}
+            </strong>
+          </div>
+          <div className="strategy-keypoint">
+            <p>当前</p>
+            <strong>
+              {currentPoint?.date} | {currentPoint ? formatValue(currentPoint.value) : '-'}
+            </strong>
+          </div>
+        </div>
       </div>
 
       <div className="tag-row">

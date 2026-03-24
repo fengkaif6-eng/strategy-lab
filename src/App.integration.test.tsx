@@ -50,7 +50,7 @@ describe('app integration', () => {
   test('guest is redirected to home from protected route', async () => {
     renderApp('/incubation-strategies')
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: '量化策略展示平台' })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: '量化策略平台' })).toBeInTheDocument(),
     )
     expect(screen.getByText('请先注册或登录后访问该页面')).toBeInTheDocument()
   })

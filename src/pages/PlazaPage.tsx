@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { StrategyCard } from '../components/StrategyCard'
+import { useLocale } from '../context/LocaleContext'
 import { useStrategies } from '../context/StrategyContext'
 import type { StrategyChannel, StrategyRecord } from '../types/strategy'
 
@@ -17,6 +18,7 @@ function getPrimaryReturn(strategy: StrategyRecord): number {
 }
 
 export function PlazaPage({ channel, title }: PlazaPageProps) {
+  const { t } = useLocale()
   const { backtestStrategies, liveStrategies } = useStrategies()
   const source = channel === 'backtest' ? backtestStrategies : liveStrategies
   const [keyword, setKeyword] = useState('')
@@ -49,44 +51,52 @@ export function PlazaPage({ channel, title }: PlazaPageProps) {
         <div className="section-head">
           <h1>{title}</h1>
           <p>
-            展示全部{channel === 'backtest' ? '孵化' : '已发布'}策略的关键指标与收益走势。
+            {t(
+              `展示全部${channel === 'backtest' ? '孵化' : '已发布'}策略的关键指标与收益走势。`,
+              `View key metrics and return curves for all ${
+                channel === 'backtest' ? 'incubation' : 'published'
+              } strategies.`,
+            )}
           </p>
         </div>
+
         <div className="toolbar">
           <label>
-            搜索策略
+            {t('搜索策略', 'Search')}
             <input
               type="search"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="输入策略名或标签"
+              placeholder={t('输入策略名或标签', 'Enter strategy name or tag')}
             />
           </label>
+
           <label>
-            风险等级
+            {t('风险等级', 'Risk Level')}
             <select
               value={riskFilter}
               onChange={(event) =>
-                setRiskFilter(
-                  event.target.value as 'all' | 'low' | 'medium' | 'high',
-                )
+                setRiskFilter(event.target.value as 'all' | 'low' | 'medium' | 'high')
               }
             >
-              <option value="all">全部</option>
-              <option value="low">低风险</option>
-              <option value="medium">中风险</option>
-              <option value="high">高风险</option>
+              <option value="all">{t('全部', 'All')}</option>
+              <option value="low">{t('低风险', 'Low')}</option>
+              <option value="medium">{t('中风险', 'Medium')}</option>
+              <option value="high">{t('高风险', 'High')}</option>
             </select>
           </label>
+
           <label>
-            排序
+            {t('排序', 'Sort')}
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value as SortMode)}
             >
-              <option value="updated">按更新时间</option>
+              <option value="updated">{t('按更新时间', 'By updated time')}</option>
               <option value="return">
-                按{channel === 'backtest' ? '年化收益' : '累计收益'}
+                {channel === 'backtest'
+                  ? t('按年化收益', 'By annual return')
+                  : t('按累计收益', 'By total return')}
               </option>
             </select>
           </label>
@@ -95,11 +105,11 @@ export function PlazaPage({ channel, title }: PlazaPageProps) {
 
       {list.length === 0 ? (
         <section className="empty-panel">
-          <h2>暂无匹配策略</h2>
-          <p>请调整筛选条件后重试。</p>
+          <h2>{t('暂无匹配策略', 'No strategies found')}</h2>
+          <p>{t('请调整筛选条件后重试。', 'Try adjusting filters and search keywords.')}</p>
         </section>
       ) : (
-        <section className="card-grid" aria-label={`${title}策略列表`}>
+        <section className="card-grid" aria-label={`${title}${t('策略列表', ' strategy list')}`}>
           {list.map((strategy) => (
             <StrategyCard key={strategy.id} strategy={strategy} />
           ))}
@@ -108,3 +118,4 @@ export function PlazaPage({ channel, title }: PlazaPageProps) {
     </div>
   )
 }
+

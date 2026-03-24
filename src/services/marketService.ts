@@ -1,5 +1,6 @@
 import type {
   MarketIndexQuote,
+  MarketIntradayMap,
   MarketIntradayPoint,
   MarketTickerQuote,
 } from '../types/market'
@@ -15,6 +16,15 @@ const TICKER_SYMBOLS = [
   's_sh688981',
   's_sz000333',
 ]
+
+const INDEX_CODES = ['000001', '399001', '399006', '000688'] as const
+
+const INTRADAY_SYMBOL_BY_CODE: Record<string, string> = {
+  '000001': 'sh000001',
+  '399001': 'sz399001',
+  '399006': 'sz399006',
+  '000688': 'sh000688',
+}
 
 const NAME_BY_SYMBOL: Record<string, string> = {
   s_sh000001: '上证指数',
@@ -159,8 +169,11 @@ function toMinutePoint(raw: string): MarketIntradayPoint | null {
   }
 }
 
-export async function fetchShanghaiIntradayCurve(): Promise<MarketIntradayPoint[]> {
-  const symbol = 'sh000001'
+export async function fetchIndexIntradayCurve(code: string): Promise<MarketIntradayPoint[]> {
+  const symbol = INTRADAY_SYMBOL_BY_CODE[code]
+  if (!symbol) {
+    return []
+  }
   const url = `https://web.ifzq.gtimg.cn/appstock/app/minute/query?code=${symbol}`
   const response = await fetch(url, { cache: 'no-store' })
   if (!response.ok) {
@@ -171,4 +184,18 @@ export async function fetchShanghaiIntradayCurve(): Promise<MarketIntradayPoint[
   return rows
     .map((row) => toMinutePoint(row))
     .filter((item): item is MarketIntradayPoint => item !== null)
+}
+
+export async function fetchAllIndexIntradayCurves(): Promise<MarketIntradayMap> {
+  const entries = await Promise.all(
+    INDEX_CODES.map(async (code) => {
+      try {
+        const points = await fetchIndexIntradayCurve(code)
+        return [code, points] as const
+      } catch {
+        return [code, []] as const
+      }
+    }),
+  )
+  return Object.fromEntries(entries)
 }

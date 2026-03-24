@@ -19,3 +19,5 @@ export interface MarketIntradayPoint {
   price: number
   volume: number
 }
+
+export type MarketIntradayMap = Record<string, MarketIntradayPoint[]>

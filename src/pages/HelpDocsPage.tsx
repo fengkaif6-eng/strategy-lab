@@ -1,4 +1,6 @@
-const sections = [
+import { useLocale } from '../context/LocaleContext'
+
+const sectionsZh = [
   {
     id: 'quick-start',
     title: '快速开始',
@@ -34,22 +36,73 @@ const sections = [
       'Q: 为什么孵化策略和已发布策略的结果不一样？',
       'A: 已发布策略会受到真实交易执行、滑点和时延影响，通常更保守。',
       'Q: 游客为什么看不到策略板块？',
-      'A: 游客仅可访问首页，需注册登录后才可访问策略相关页面。',
+      'A: 游客仅可访问首页，需要注册登录后才可访问策略相关页面。',
       'Q: 为什么我无法看到策略管理？',
       'A: 策略管理仅对管理员角色开放。',
     ],
   },
 ]
 
+const sectionsEn = [
+  {
+    id: 'quick-start',
+    title: 'Quick Start',
+    content: [
+      '1. After registration and sign-in, you can access Incubation, Published, and FAQ.',
+      '2. Admin users can maintain strategies in Strategy Admin, and updates sync to plaza pages.',
+      '3. Strategy Detail includes return/drawdown charts, and admins can manage attachments.',
+    ],
+  },
+  {
+    id: 'metrics',
+    title: 'Metric Definitions',
+    content: [
+      'Annual Return: Strategy return annualized for cross-period comparison.',
+      'Sharpe Ratio: Excess return per unit of risk; higher is better.',
+      'Max Drawdown: Largest drop from peak to trough, indicating downside risk.',
+      'Alpha: Excess return relative to benchmark, indicating active contribution.',
+    ],
+  },
+  {
+    id: 'lifecycle',
+    title: 'Strategy Lifecycle',
+    content: [
+      'Incubation: Validate parameters, stability, and risk controls.',
+      'Published: Track return, drawdown, execution drift, and persistence.',
+      'Review: Iterate with attachments and historical metrics.',
+    ],
+  },
+  {
+    id: 'faq',
+    title: 'FAQ',
+    content: [
+      'Q: Why are incubation and published results different?',
+      'A: Published strategies are affected by real execution, slippage, and latency.',
+      'Q: Why can guests only see the home page?',
+      'A: Strategy pages require registration/sign-in by design.',
+      'Q: Why cannot I access Strategy Admin?',
+      'A: Strategy Admin is available to admin role only.',
+    ],
+  },
+]
+
 export function HelpDocsPage() {
+  const { locale, t } = useLocale()
+  const sections = locale === 'zh' ? sectionsZh : sectionsEn
+
   return (
     <div className="page-stack">
       <section className="section-panel">
         <h1>FAQ</h1>
-        <p>覆盖平台权限、指标定义、策略生命周期与常见使用问题。</p>
+        <p>
+          {t(
+            '覆盖平台权限、指标定义、策略生命周期与常见使用问题。',
+            'Covers permissions, metric definitions, strategy lifecycle, and common usage questions.',
+          )}
+        </p>
       </section>
       <div className="docs-layout">
-        <aside className="docs-nav" aria-label="FAQ目录">
+        <aside className="docs-nav" aria-label={t('FAQ目录', 'FAQ Table of Contents')}>
           {sections.map((section) => (
             <a key={section.id} href={`#${section.id}`}>
               {section.title}
@@ -70,3 +123,4 @@ export function HelpDocsPage() {
     </div>
   )
 }
+

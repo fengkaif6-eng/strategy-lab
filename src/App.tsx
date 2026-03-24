@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
+import { LocaleProvider, useLocale } from './context/LocaleContext'
 import { StrategyProvider } from './context/StrategyContext'
 import { AuthPage } from './pages/AuthPage'
 import { HelpDocsPage } from './pages/HelpDocsPage'
@@ -12,6 +13,8 @@ import { StrategyDetailPage } from './pages/StrategyDetailPage'
 import { StrategyManagePage } from './pages/StrategyManagePage'
 
 export function AppRoutes() {
+  const { t } = useLocale()
+
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
@@ -21,11 +24,21 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
         <Route
           path="/incubation-strategies"
-          element={<PlazaPage channel="backtest" title="孵化策略" />}
+          element={
+            <PlazaPage
+              channel="backtest"
+              title={t('孵化策略', 'Incubation Strategies')}
+            />
+          }
         />
         <Route
           path="/published-strategies"
-          element={<PlazaPage channel="live" title="已发布策略" />}
+          element={
+            <PlazaPage
+              channel="live"
+              title={t('已发布策略', 'Published Strategies')}
+            />
+          }
         />
         <Route path="/faq" element={<HelpDocsPage />} />
         <Route path="/strategy/:channel/:id" element={<StrategyDetailPage />} />
@@ -36,7 +49,10 @@ export function AppRoutes() {
       </Route>
 
       <Route path="/home" element={<Navigate to="/" replace />} />
-      <Route path="/backtest-plaza" element={<Navigate to="/incubation-strategies" replace />} />
+      <Route
+        path="/backtest-plaza"
+        element={<Navigate to="/incubation-strategies" replace />}
+      />
       <Route path="/live-plaza" element={<Navigate to="/published-strategies" replace />} />
       <Route path="/help-docs" element={<Navigate to="/faq" replace />} />
       <Route path="*" element={<NotFoundPage />} />
@@ -46,12 +62,15 @@ export function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <StrategyProvider>
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </StrategyProvider>
-    </AuthProvider>
+    <LocaleProvider>
+      <AuthProvider>
+        <StrategyProvider>
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </StrategyProvider>
+      </AuthProvider>
+    </LocaleProvider>
   )
 }
+

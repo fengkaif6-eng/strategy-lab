@@ -1,27 +1,27 @@
 import { useEffect, useState } from 'react'
 import {
+  fetchAllIndexIntradayCurves,
   fetchMarketIndexes,
   fetchMarketTickers,
-  fetchShanghaiIntradayCurve,
   normalizeCodeName,
 } from '../services/marketService'
 import type {
   MarketIndexQuote,
-  MarketIntradayPoint,
+  MarketIntradayMap,
   MarketTickerQuote,
 } from '../types/market'
 
 interface MarketSnapshot {
   indexes: MarketIndexQuote[]
   tickers: MarketTickerQuote[]
-  shanghaiIntraday: MarketIntradayPoint[]
+  intradayByCode: MarketIntradayMap
   updatedAt: string
 }
 
 interface MarketDataState {
   indexes: MarketIndexQuote[]
   tickers: MarketTickerQuote[]
-  shanghaiIntraday: MarketIntradayPoint[]
+  intradayByCode: MarketIntradayMap
   loading: boolean
   stale: boolean
   updatedAt: string | null
@@ -41,7 +41,8 @@ function readSnapshot(): MarketSnapshot | null {
     if (
       !Array.isArray(parsed.indexes) ||
       !Array.isArray(parsed.tickers) ||
-      !Array.isArray(parsed.shanghaiIntraday)
+      typeof parsed.intradayByCode !== 'object' ||
+      parsed.intradayByCode === null
     ) {
       return null
     }
@@ -54,7 +55,7 @@ function readSnapshot(): MarketSnapshot | null {
         ...item,
         name: normalizeCodeName(item.code, item.name),
       })),
-      shanghaiIntraday: parsed.shanghaiIntraday,
+      intradayByCode: parsed.intradayByCode,
       updatedAt: parsed.updatedAt,
     }
   } catch {
@@ -73,7 +74,7 @@ export function useMarketData() {
       return {
         indexes: [],
         tickers: [],
-        shanghaiIntraday: [],
+        intradayByCode: {},
         loading: true,
         stale: false,
         updatedAt: null,
@@ -82,7 +83,7 @@ export function useMarketData() {
     return {
       indexes: snapshot.indexes,
       tickers: snapshot.tickers,
-      shanghaiIntraday: snapshot.shanghaiIntraday,
+      intradayByCode: snapshot.intradayByCode,
       loading: true,
       stale: true,
       updatedAt: snapshot.updatedAt,
@@ -96,7 +97,7 @@ export function useMarketData() {
       const [indexesResult, tickersResult, intradayResult] = await Promise.allSettled([
         fetchMarketIndexes(),
         fetchMarketTickers(),
-        fetchShanghaiIntradayCurve(),
+        fetchAllIndexIntradayCurves(),
       ])
 
       if (!isActive) {
@@ -122,10 +123,17 @@ export function useMarketData() {
             ? tickersResult.value
             : previous.tickers
 
-        const nextIntraday =
-          intradayResult.status === 'fulfilled' && intradayResult.value.length > 0
-            ? intradayResult.value
-            : previous.shanghaiIntraday
+        const nextIntradayByCode =
+          intradayResult.status === 'fulfilled'
+            ? Object.entries(intradayResult.value).reduce<MarketIntradayMap>(
+                (acc, [code, points]) => {
+                  acc[code] =
+                    points.length > 0 ? points : previous.intradayByCode[code] ?? []
+                  return acc
+                },
+                { ...previous.intradayByCode },
+              )
+            : previous.intradayByCode
 
         const hasFresh =
           indexesResult.status === 'fulfilled' ||
@@ -140,7 +148,7 @@ export function useMarketData() {
           writeSnapshot({
             indexes: nextIndexes,
             tickers: nextTickers,
-            shanghaiIntraday: nextIntraday,
+            intradayByCode: nextIntradayByCode,
             updatedAt: nextUpdatedAt ?? new Date().toISOString(),
           })
         }
@@ -148,9 +156,13 @@ export function useMarketData() {
         return {
           indexes: nextIndexes,
           tickers: nextTickers,
-          shanghaiIntraday: nextIntraday,
+          intradayByCode: nextIntradayByCode,
           loading: false,
-          stale: !hasFresh && (nextIndexes.length > 0 || nextTickers.length > 0),
+          stale:
+            !hasFresh &&
+            (nextIndexes.length > 0 ||
+              nextTickers.length > 0 ||
+              Object.keys(nextIntradayByCode).length > 0),
           updatedAt: nextUpdatedAt,
         }
       })

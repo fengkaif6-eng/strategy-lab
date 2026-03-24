@@ -15,6 +15,8 @@ import { useStrategies } from '../context/StrategyContext'
 import { useMarketData } from '../hooks/useMarketData'
 import { formatPercent, formatSigned } from '../utils/format'
 
+const MARKET_CURVE_POINTS = 300
+
 const featureItems = [
   {
     title: '策略生命周期管理',
@@ -44,27 +46,49 @@ const contactItems = [
   { label: '办公地址', value: '北京市朝阳区（占位）' },
 ]
 
+interface CurvePoint {
+  time: string
+  value: number
+  baseline: number
+}
+
+function takeRecent<T>(items: T[], size: number): T[] {
+  return items.slice(Math.max(items.length - size, 0))
+}
+
 function toMarketCurveFromIntraday(
   intraday: { time: string; price: number }[],
   fallbackTrend: number[],
-) {
-  if (intraday.length > 0) {
-    const baseline = intraday[0].price
-    return intraday.map((point) => ({
+): CurvePoint[] {
+  const recentIntraday = takeRecent(intraday, MARKET_CURVE_POINTS)
+  if (recentIntraday.length > 0) {
+    const baseline = recentIntraday[0].price
+    return recentIntraday.map((point) => ({
       time: point.time,
       value: point.price,
       baseline,
     }))
   }
-  if (fallbackTrend.length > 0) {
-    const baseline = fallbackTrend[0]
-    return fallbackTrend.map((value, index) => ({
+
+  const recentFallback = takeRecent(fallbackTrend, MARKET_CURVE_POINTS)
+  if (recentFallback.length > 0) {
+    const baseline = recentFallback[0]
+    return recentFallback.map((value, index) => ({
       time: String(index + 1),
       value,
       baseline,
     }))
   }
   return []
+}
+
+function buildYAxisDomain(points: CurvePoint[]): [number, number] {
+  const prices = points.map((item) => item.value)
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const range = max - min
+  const padding = range > 0 ? Math.max(range * 0.08, 0.2) : Math.max(max * 0.002, 0.2)
+  return [min - padding, max + padding]
 }
 
 export function HomePage() {
@@ -75,10 +99,14 @@ export function HomePage() {
   const featured = [...backtestStrategies.slice(0, 1), ...liveStrategies.slice(0, 1)]
   const ctaPath = role === 'guest' ? '/register' : '/incubation-strategies'
   const ctaText = role === 'guest' ? '立即注册查看策略' : '开始查看孵化策略'
+
   const primaryIndex = indexes.find((item) => item.code === '000001') ?? indexes[0]
   const marketCurve = primaryIndex
     ? toMarketCurveFromIntraday(shanghaiIntraday, primaryIndex.trend)
     : []
+  const yAxisDomain =
+    marketCurve.length > 1 ? buildYAxisDomain(marketCurve) : (['auto', 'auto'] as const)
+
   const marketHigh =
     marketCurve.length > 0 ? Math.max(...marketCurve.map((item) => item.value)) : 0
   const marketLow =
@@ -135,8 +163,7 @@ export function HomePage() {
                 <span>{item.code}</span>
                 <span>{item.price.toFixed(2)}</span>
                 <span className={item.changePct >= 0 ? 'text-profit' : 'text-loss'}>
-                  {formatPercent(item.changePct / 100)}（
-                  {item.changePct >= 0 ? '上涨' : '下跌'}）
+                  {formatPercent(item.changePct / 100)}（{item.changePct >= 0 ? '上涨' : '下跌'}）
                 </span>
               </span>
             ))
@@ -148,7 +175,10 @@ export function HomePage() {
         <div className="section-head">
           <div>
             <h2>市场趋势大图</h2>
-            <p>展示 {primaryIndex?.name ?? '上证指数'} 最新波动曲线，包含基准参考线。</p>
+            <p>
+              展示{primaryIndex?.name ?? '上证指数'}今日分时曲线，仅保留最近{' '}
+              {MARKET_CURVE_POINTS} 个点。
+            </p>
           </div>
           <p className="market-time">
             更新时间：{updatedAt ? new Date(updatedAt).toLocaleString('zh-CN') : '暂无'}
@@ -167,13 +197,15 @@ export function HomePage() {
               <XAxis
                 dataKey="time"
                 tick={{ fill: '#c7d8f4', fontSize: 11 }}
+                minTickGap={18}
                 axisLine={{ stroke: 'rgba(188,210,245,0.35)' }}
                 tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
               />
               <YAxis
-                width={58}
+                width={64}
+                domain={yAxisDomain}
                 tick={{ fill: '#c7d8f4', fontSize: 11 }}
-                tickFormatter={(value: number) => value.toFixed(0)}
+                tickFormatter={(value: number) => value.toFixed(1)}
                 axisLine={{ stroke: 'rgba(188,210,245,0.35)' }}
                 tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
               />
@@ -185,7 +217,7 @@ export function HomePage() {
                     ? [`${shown}（基准）`, '参考线']
                     : [shown, primaryIndex?.name ?? '指数']
                 }}
-                labelFormatter={(label) => `序列点 ${label}`}
+                labelFormatter={(label) => `时间 ${label}`}
               />
               <Area
                 type="monotone"
@@ -216,7 +248,9 @@ export function HomePage() {
           </article>
           <article>
             <p>涨跌幅</p>
-            <strong className={primaryIndex && primaryIndex.changePct >= 0 ? 'text-profit' : 'text-loss'}>
+            <strong
+              className={primaryIndex && primaryIndex.changePct >= 0 ? 'text-profit' : 'text-loss'}
+            >
               {primaryIndex ? formatPercent(primaryIndex.changePct / 100) : '--'}
             </strong>
           </article>

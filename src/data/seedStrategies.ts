@@ -1,6 +1,7 @@
 import type {
   BacktestStrategyRecord,
   LiveStrategyRecord,
+  ThirdPartyStrategyRecord,
   StrategyCollection,
 } from '../types/strategy'
 
@@ -378,7 +379,179 @@ export const seedLiveStrategies: LiveStrategyRecord[] = [
   },
 ]
 
+export const seedThirdPartyStrategies: ThirdPartyStrategyRecord[] = [
+  {
+    id: 'tp-201',
+    name: '第三方CTA指数增强',
+    channel: 'thirdparty',
+    author: '第三方管理人 AlphaQuant',
+    tags: ['第三方', 'CTA', '趋势'],
+    riskLevel: 'medium',
+    status: 'active',
+    updatedAt: '2026-03-25',
+    summary: '第三方管理人提供的多品种趋势策略，强调回撤控制与稳健年化。',
+    metrics: {
+      annualReturn: 0.183,
+      sharpe: 1.46,
+      maxDrawdown: -0.071,
+      winRate: 0.59,
+      tradeCount: 138,
+      volatility: 0.131,
+    },
+    detail: {
+      description: '基于第三方托管账户回传数据构建指标，按周同步最新净值。',
+      logic: '多品种趋势打分 + 风险预算 + 动态仓位约束。',
+      params: {
+        rebalanceFreq: 'weekly',
+        maxLeverage: 1.1,
+        riskBudget: '8%',
+      },
+      equityCurve: buildCurve([
+        1.0, 1.018, 1.032, 1.047, 1.056, 1.069, 1.082, 1.096, 1.109, 1.123, 1.137, 1.152,
+      ]),
+      drawdownCurve: buildCurve([
+        0.0, -0.008, -0.011, -0.009, -0.014, -0.012, -0.013, -0.01, -0.012, -0.011, -0.009, -0.008,
+      ]),
+      monthlyReturns: buildMonthlySeries([
+        0.018, 0.014, 0.015, 0.009, 0.013, 0.012, 0.014, 0.013, 0.014, 0.014, 0.013, 0.013,
+      ]),
+      riskNotes: ['第三方报送口径可能与平台口径存在轻微差异', '极端行情下波动可能放大'],
+      attachments: [],
+    },
+  },
+  {
+    id: 'tp-202',
+    name: '第三方市场中性组合',
+    channel: 'thirdparty',
+    author: '第三方管理人 BetaCapital',
+    tags: ['第三方', '市场中性', '低波'],
+    riskLevel: 'low',
+    status: 'active',
+    updatedAt: '2026-03-26',
+    summary: '第三方市场中性策略，追求低波动下的稳定复利。',
+    metrics: {
+      annualReturn: 0.124,
+      sharpe: 1.72,
+      maxDrawdown: -0.039,
+      winRate: 0.66,
+      tradeCount: 112,
+      volatility: 0.079,
+    },
+    detail: {
+      description: '通过多空对冲降低系统性风险，收益主要来自选股与择时细分因子。',
+      logic: '行业中性约束 + 因子轮动 + 回撤阈值风控。',
+      params: {
+        netExposure: '0-10%',
+        rebalanceFreq: 'bi-weekly',
+        maxDrawdownGuard: '4%',
+      },
+      equityCurve: buildCurve([
+        1.0, 1.009, 1.018, 1.026, 1.035, 1.043, 1.051, 1.06, 1.068, 1.076, 1.085, 1.094,
+      ]),
+      drawdownCurve: buildCurve([
+        0.0, -0.003, -0.004, -0.005, -0.004, -0.005, -0.004, -0.005, -0.006, -0.005, -0.004, -0.004,
+      ]),
+      monthlyReturns: buildMonthlySeries([
+        0.009, 0.009, 0.008, 0.009, 0.008, 0.008, 0.009, 0.008, 0.008, 0.009, 0.008, 0.008,
+      ]),
+      riskNotes: ['策略容量受限，规模扩大可能影响收益', '成交活跃度下降时对冲成本上升'],
+      attachments: [],
+    },
+  },
+  {
+    id: 'tp-203',
+    name: 'Third-Party Macro Rotation',
+    channel: 'thirdparty',
+    author: 'Gamma Advisory',
+    tags: ['third-party', 'macro', 'rotation'],
+    riskLevel: 'medium',
+    status: 'active',
+    updatedAt: '2026-04-08',
+    summary:
+      'Cross-asset macro rotation strategy focusing on equity, bond and commodity allocation shifts.',
+    metrics: {
+      annualReturn: 0.168,
+      sharpe: 1.41,
+      maxDrawdown: -0.068,
+      winRate: 0.61,
+      tradeCount: 126,
+      volatility: 0.117,
+    },
+    detail: {
+      description:
+        'Uses macro regime signals and relative momentum to rebalance among equity, bond and commodity sleeves.',
+      logic:
+        'Regime score + momentum ranking + risk parity scaling, with weekly execution and downside guardrails.',
+      params: {
+        rebalanceFreq: 'weekly',
+        targetVol: '12%',
+        maxSingleAssetWeight: '45%',
+      },
+      equityCurve: buildCurve([
+        1.0, 1.014, 1.027, 1.036, 1.049, 1.058, 1.072, 1.086, 1.094, 1.109, 1.122, 1.138,
+      ]),
+      drawdownCurve: buildCurve([
+        0.0, -0.006, -0.009, -0.011, -0.008, -0.013, -0.01, -0.012, -0.014, -0.011, -0.009, -0.008,
+      ]),
+      monthlyReturns: buildMonthlySeries([
+        0.014, 0.013, 0.009, 0.013, 0.009, 0.014, 0.013, 0.008, 0.015, 0.013, 0.014, 0.012,
+      ]),
+      riskNotes: [
+        'Macro regime turning points may increase short-term whipsaw.',
+        'Cross-asset correlation spikes can reduce diversification benefits.',
+      ],
+      attachments: [],
+    },
+  },
+  {
+    id: 'tp-204',
+    name: 'Third-Party AI Equity Selection',
+    channel: 'thirdparty',
+    author: 'Delta Quant Labs',
+    tags: ['third-party', 'ai', 'equity'],
+    riskLevel: 'high',
+    status: 'active',
+    updatedAt: '2026-04-08',
+    summary:
+      'AI-driven stock selection strategy with dynamic sector exposure and strict position-level risk controls.',
+    metrics: {
+      annualReturn: 0.219,
+      sharpe: 1.63,
+      maxDrawdown: -0.097,
+      winRate: 0.58,
+      tradeCount: 174,
+      volatility: 0.166,
+    },
+    detail: {
+      description:
+        'Combines alternative data signals and model ensemble ranking to select high-conviction long positions.',
+      logic:
+        'Model score ensemble + liquidity filter + stop-loss and exposure caps, rebalanced every 3 trading days.',
+      params: {
+        rebalanceFreq: 'every-3-days',
+        maxHolding: 18,
+        stopLoss: '5%',
+      },
+      equityCurve: buildCurve([
+        1.0, 1.021, 1.038, 1.029, 1.056, 1.074, 1.069, 1.097, 1.112, 1.104, 1.131, 1.152,
+      ]),
+      drawdownCurve: buildCurve([
+        0.0, -0.01, -0.013, -0.031, -0.018, -0.015, -0.027, -0.019, -0.016, -0.024, -0.014, -0.012,
+      ]),
+      monthlyReturns: buildMonthlySeries([
+        0.021, 0.017, -0.009, 0.027, 0.018, -0.005, 0.028, 0.015, -0.008, 0.027, 0.021, 0.019,
+      ]),
+      riskNotes: [
+        'Signal decay may accelerate in crowded factor environments.',
+        'Higher turnover can raise implementation cost and slippage.',
+      ],
+      attachments: [],
+    },
+  },
+]
+
 export const seedStrategies: StrategyCollection = {
   backtest: seedBacktestStrategies,
   live: seedLiveStrategies,
+  thirdparty: seedThirdPartyStrategies,
 }

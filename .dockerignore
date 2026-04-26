@@ -1,0 +1,9 @@
+*
+!backend/
+!backend/**
+!Dockerfile
+!.dockerignore
+
+backend/tests/
+backend/**/__pycache__/
+backend/**/*.py[cod]

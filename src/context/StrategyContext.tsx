@@ -1,37 +1,43 @@
 import {
   createContext,
-  startTransition,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type PropsWithChildren,
 } from 'react'
 import {
   deleteStrategy as removeStrategyFromStorage,
   loadAllStrategies,
+  moveStrategy as moveStrategyInStorage,
   upsertStrategy as upsertStrategyInStorage,
 } from '../services/strategyStorage'
 import type {
   BacktestStrategyRecord,
   LiveStrategyRecord,
+  ThirdPartyStrategyRecord,
   StrategyChannel,
   StrategyCollection,
   StrategyRecord,
 } from '../types/strategy'
 
 interface StrategyContextValue {
+  isLoading: boolean
   backtestStrategies: BacktestStrategyRecord[]
   liveStrategies: LiveStrategyRecord[]
-  upsertStrategy: (strategy: StrategyRecord) => void
-  deleteStrategy: (channel: StrategyChannel, id: string) => void
+  thirdpartyStrategies: ThirdPartyStrategyRecord[]
+  upsertStrategy: (strategy: StrategyRecord) => Promise<void>
+  deleteStrategy: (channel: StrategyChannel, id: string) => Promise<void>
+  moveStrategy: (fromChannel: StrategyChannel, toChannel: StrategyChannel, id: string) => Promise<void>
   findStrategy: (
     channel: StrategyChannel,
     id: string,
-  ) => BacktestStrategyRecord | LiveStrategyRecord | undefined
+  ) => BacktestStrategyRecord | LiveStrategyRecord | ThirdPartyStrategyRecord | undefined
   stats: {
     totalStrategies: number
     totalBacktest: number
     totalLive: number
+    totalThirdparty: number
   }
 }
 
@@ -41,57 +47,96 @@ function getCollectionByChannel(
   channel: StrategyChannel,
   collection: StrategyCollection,
 ) {
-  return channel === 'backtest' ? collection.backtest : collection.live
+  if (channel === 'backtest') {
+    return collection.backtest
+  }
+  if (channel === 'live') {
+    return collection.live
+  }
+  return collection.thirdparty
 }
 
 export function StrategyProvider({ children }: PropsWithChildren) {
-  const [collection, setCollection] = useState<StrategyCollection>(() =>
-    loadAllStrategies(),
-  )
+  const [isLoading, setIsLoading] = useState(true)
+  const [collection, setCollection] = useState<StrategyCollection>({
+    backtest: [],
+    live: [],
+    thirdparty: [],
+  })
 
   useEffect(() => {
-    const syncOnStorageChange = (event: StorageEvent) => {
-      if (!event.key || event.key.startsWith('strategy-lab/')) {
-        startTransition(() => {
-          setCollection(loadAllStrategies())
-        })
+    let active = true
+
+    const sync = async () => {
+      try {
+        const next = await loadAllStrategies()
+        if (!active) {
+          return
+        }
+        setCollection(next)
+      } finally {
+        if (active) {
+          setIsLoading(false)
+        }
       }
     }
-    window.addEventListener('storage', syncOnStorageChange)
-    return () => window.removeEventListener('storage', syncOnStorageChange)
+
+    void sync()
+    const timer = window.setInterval(() => {
+      void sync()
+    }, 5_000)
+
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
   }, [])
 
-  const contextValue: StrategyContextValue = {
-    backtestStrategies: collection.backtest,
-    liveStrategies: collection.live,
-    upsertStrategy: (strategy) => {
-      const updated = upsertStrategyInStorage(strategy)
-      startTransition(() => {
-        setCollection((prev) =>
-          strategy.channel === 'backtest'
-            ? { ...prev, backtest: updated as BacktestStrategyRecord[] }
-            : { ...prev, live: updated as LiveStrategyRecord[] },
-        )
-      })
-    },
-    deleteStrategy: (channel, id) => {
-      const updated = removeStrategyFromStorage(channel, id)
-      startTransition(() => {
-        setCollection((prev) =>
-          channel === 'backtest'
-            ? { ...prev, backtest: updated as BacktestStrategyRecord[] }
-            : { ...prev, live: updated as LiveStrategyRecord[] },
-        )
-      })
-    },
-    findStrategy: (channel, id) =>
-      getCollectionByChannel(channel, collection).find((item) => item.id === id),
-    stats: {
-      totalStrategies: collection.backtest.length + collection.live.length,
-      totalBacktest: collection.backtest.length,
-      totalLive: collection.live.length,
-    },
-  }
+  const contextValue: StrategyContextValue = useMemo(
+    () => ({
+      isLoading,
+      backtestStrategies: collection.backtest,
+      liveStrategies: collection.live,
+      thirdpartyStrategies: collection.thirdparty,
+      upsertStrategy: async (strategy) => {
+        const updated = await upsertStrategyInStorage(strategy)
+        setCollection((prev) => {
+          if (strategy.channel === 'backtest') {
+            return { ...prev, backtest: updated as BacktestStrategyRecord[] }
+          }
+          if (strategy.channel === 'live') {
+            return { ...prev, live: updated as LiveStrategyRecord[] }
+          }
+          return { ...prev, thirdparty: updated as ThirdPartyStrategyRecord[] }
+        })
+      },
+      deleteStrategy: async (channel, id) => {
+        const updated = await removeStrategyFromStorage(channel, id)
+        setCollection((prev) => {
+          if (channel === 'backtest') {
+            return { ...prev, backtest: updated as BacktestStrategyRecord[] }
+          }
+          if (channel === 'live') {
+            return { ...prev, live: updated as LiveStrategyRecord[] }
+          }
+          return { ...prev, thirdparty: updated as ThirdPartyStrategyRecord[] }
+        })
+      },
+      moveStrategy: async (fromChannel, toChannel, id) => {
+        const updated = await moveStrategyInStorage(fromChannel, toChannel, id)
+        setCollection(updated)
+      },
+      findStrategy: (channel, id) =>
+        getCollectionByChannel(channel, collection).find((item) => item.id === id),
+      stats: {
+        totalStrategies: collection.backtest.length + collection.live.length + collection.thirdparty.length,
+        totalBacktest: collection.backtest.length,
+        totalLive: collection.live.length,
+        totalThirdparty: collection.thirdparty.length,
+      },
+    }),
+    [collection, isLoading],
+  )
 
   return (
     <StrategyContext.Provider value={contextValue}>

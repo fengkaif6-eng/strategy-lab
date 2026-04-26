@@ -11,12 +11,15 @@ import {
 } from 'recharts'
 import { useLocale } from '../context/LocaleContext'
 import type { StrategyRecord } from '../types/strategy'
+import { buildEquityAxisScale } from '../utils/chartAxis'
 import { formatDate, formatPercent, formatSigned } from '../utils/format'
+import { getUnifiedStrategyMetrics, isBpStrategy } from '../utils/strategyMetrics'
 import { MetricChip } from './MetricChip'
 
 interface StrategyCardProps {
   strategy: StrategyRecord
   compact?: boolean
+  detailTo?: string
 }
 
 function statusLabel(status: StrategyRecord['status']) {
@@ -35,6 +38,10 @@ function formatPercentValue(value: number, digits = 2) {
   return `${sign}${percent.toFixed(digits)}%`
 }
 
+function formatBpValue(value: number) {
+  return `${formatSigned(value)} bp`
+}
+
 function toCumulativeReturnCurve(curve: StrategyRecord['detail']['equityCurve']) {
   const base = curve[0]?.value ?? 1
   if (base === 0) {
@@ -49,55 +56,83 @@ function toCumulativeReturnCurve(curve: StrategyRecord['detail']['equityCurve'])
   }))
 }
 
-export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
+export function StrategyCard({ strategy, compact = false, detailTo }: StrategyCardProps) {
   const { t, locale } = useLocale()
-  const metrics =
-    strategy.channel === 'backtest'
-      ? [
-          {
-            label: t('年化收益', 'Annual Return'),
-            value: formatPercent(strategy.metrics.annualReturn),
-            rawValue: strategy.metrics.annualReturn,
-          },
-          {
-            label: t('夏普比率', 'Sharpe Ratio'),
-            value: formatSigned(strategy.metrics.sharpe),
-          },
-          {
-            label: t('最大回撤', 'Max Drawdown'),
-            value: formatPercent(strategy.metrics.maxDrawdown),
-            rawValue: strategy.metrics.maxDrawdown,
-          },
-          {
-            label: t('胜率', 'Win Rate'),
-            value: formatPercent(strategy.metrics.winRate),
-            rawValue: strategy.metrics.winRate - 0.5,
-          },
-        ]
-      : [
-          {
-            label: t('累计收益', 'Total Return'),
-            value: formatPercent(strategy.metrics.totalReturn),
-            rawValue: strategy.metrics.totalReturn,
-          },
-          {
-            label: 'Alpha',
-            value: formatPercent(strategy.metrics.alpha),
-            rawValue: strategy.metrics.alpha,
-          },
-          {
-            label: t('最大回撤', 'Max Drawdown'),
-            value: formatPercent(strategy.metrics.maxDrawdown),
-            rawValue: strategy.metrics.maxDrawdown,
-          },
-          {
-            label: t('月胜率', 'Monthly Win Rate'),
-            value: formatPercent(strategy.metrics.monthlyWinRate),
-            rawValue: strategy.metrics.monthlyWinRate - 0.5,
-          },
-        ]
+  const resolvedDetailTo = detailTo ?? `/strategy/${strategy.channel}/${strategy.id}`
+  const unifiedMetrics = getUnifiedStrategyMetrics(strategy)
+  const bpStrategy = isBpStrategy(strategy)
+  const metrics = bpStrategy
+    ? [
+        {
+          label: t('累计收益(bp)', 'Cumulative Return (bp)'),
+          value:
+            unifiedMetrics.cumulativeReturnBp === null
+              ? '--'
+              : formatBpValue(unifiedMetrics.cumulativeReturnBp),
+          rawValue: unifiedMetrics.cumulativeReturnBp ?? undefined,
+        },
+        {
+          label: t('最大回撤(bp)', 'Max Drawdown (bp)'),
+          value:
+            unifiedMetrics.maxDrawdownBp === null
+              ? '--'
+              : formatBpValue(unifiedMetrics.maxDrawdownBp),
+          rawValue: unifiedMetrics.maxDrawdownBp ?? undefined,
+        },
+        {
+          label: t('胜率', 'Win Rate'),
+          value: unifiedMetrics.winRate === null ? '--' : formatPercent(unifiedMetrics.winRate),
+          rawValue:
+            unifiedMetrics.winRate === null
+              ? undefined
+              : unifiedMetrics.winRate - 0.5,
+        },
+        {
+          label: t('波动率', 'Volatility'),
+          value:
+            unifiedMetrics.volatility === null
+              ? '--'
+              : formatPercent(unifiedMetrics.volatility),
+          rawValue:
+            unifiedMetrics.volatility === null
+              ? undefined
+              : -unifiedMetrics.volatility,
+        },
+      ]
+    : [
+        {
+          label: t('年化收益', 'Annual Return'),
+          value:
+            unifiedMetrics.annualReturn === null
+              ? '--'
+              : formatPercent(unifiedMetrics.annualReturn),
+          rawValue: unifiedMetrics.annualReturn ?? undefined,
+        },
+        {
+          label: t('夏普比率', 'Sharpe Ratio'),
+          value: unifiedMetrics.sharpe === null ? '--' : formatSigned(unifiedMetrics.sharpe),
+          rawValue: unifiedMetrics.sharpe ?? undefined,
+        },
+        {
+          label: t('最大回撤率', 'Max Drawdown'),
+          value:
+            unifiedMetrics.maxDrawdown === null
+              ? '--'
+              : formatPercent(unifiedMetrics.maxDrawdown),
+          rawValue: unifiedMetrics.maxDrawdown ?? undefined,
+        },
+        {
+          label: t('胜率', 'Win Rate'),
+          value: unifiedMetrics.winRate === null ? '--' : formatPercent(unifiedMetrics.winRate),
+          rawValue:
+            unifiedMetrics.winRate === null
+              ? undefined
+              : unifiedMetrics.winRate - 0.5,
+        },
+      ]
 
   const curve = toCumulativeReturnCurve(strategy.detail.equityCurve)
+  const equityAxisScale = buildEquityAxisScale(curve.map((point) => point.value))
   const startPoint = curve[0]
   const currentPoint = curve[curve.length - 1]
   const peakPoint = curve.reduce((best, point) =>
@@ -111,13 +146,15 @@ export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
           <h3>{strategy.name}</h3>
           <p>{strategy.summary}</p>
         </div>
-        <span className={`status-badge status-${strategy.status}`}>{statusLabel(strategy.status)[locale]}</span>
+        <span className={`status-badge status-${strategy.status}`}>
+          {statusLabel(strategy.status)[locale]}
+        </span>
       </header>
 
       <div className="strategy-chart-panel">
         <div className="strategy-chart-title-row">
           <span>{t('收益走势', 'Return Curve')}</span>
-          <span>{t('横轴：时间 / 纵轴：累计收益率（%）', 'X: Time / Y: Cumulative Return (%)')}</span>
+          <span>{t('横轴：时间 / 纵轴：累计收益率(%)', 'X: Time / Y: Cumulative Return (%)')}</span>
         </div>
         <div className="strategy-mini-chart">
           <ResponsiveContainer width="100%" height={180}>
@@ -130,6 +167,8 @@ export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
                 tickLine={{ stroke: 'rgba(188,210,245,0.35)' }}
               />
               <YAxis
+                domain={equityAxisScale.domain}
+                ticks={equityAxisScale.ticks}
                 tickFormatter={(value: number) => `${(value * 100).toFixed(1)}%`}
                 tick={{ fill: '#c7d8f4', fontSize: 10 }}
                 width={42}
@@ -247,7 +286,7 @@ export function StrategyCard({ strategy, compact = false }: StrategyCardProps) {
         </div>
         <Link
           className="btn btn-secondary"
-          to={`/strategy/${strategy.channel}/${strategy.id}`}
+          to={resolvedDetailTo}
           aria-label={t(`查看策略 ${strategy.name} 详情`, `View details for ${strategy.name}`)}
         >
           {t('查看详情', 'View Details')}

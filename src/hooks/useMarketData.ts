@@ -1,181 +1,127 @@
 import { useEffect, useState } from 'react'
-import {
-  fetchAllIndexIntradayCurves,
-  fetchMarketIndexes,
-  fetchMarketTickers,
-  normalizeCodeName,
-} from '../services/marketService'
+import { fetchHomeMarketPayload } from '../services/homeMarketApi'
 import type {
-  MarketIndexQuote,
-  MarketIntradayMap,
+  MarketCard,
+  MarketSeries,
   MarketTickerQuote,
 } from '../types/market'
 
-interface MarketSnapshot {
-  indexes: MarketIndexQuote[]
-  tickers: MarketTickerQuote[]
-  intradayByCode: MarketIntradayMap
-  updatedAt: string
-}
-
 interface MarketDataState {
-  indexes: MarketIndexQuote[]
-  tickers: MarketTickerQuote[]
-  intradayByCode: MarketIntradayMap
+  marketCards: MarketCard[]
+  importantCards: MarketCard[]
+  tickerStrip: MarketTickerQuote[]
+  seriesByCode: Record<string, MarketSeries>
   loading: boolean
   stale: boolean
   updatedAt: string | null
+  error: string | null
 }
 
-const SNAPSHOT_KEY = 'strategy-lab/market-snapshot'
-const MAX_TREND_POINTS = 24
 const POLL_INTERVAL_MS = 20_000
 
-function readSnapshot(): MarketSnapshot | null {
-  const raw = localStorage.getItem(SNAPSHOT_KEY)
-  if (!raw) {
-    return null
-  }
-  try {
-    const parsed = JSON.parse(raw) as MarketSnapshot
-    if (
-      !Array.isArray(parsed.indexes) ||
-      !Array.isArray(parsed.tickers) ||
-      typeof parsed.intradayByCode !== 'object' ||
-      parsed.intradayByCode === null
-    ) {
-      return null
-    }
-    return {
-      indexes: parsed.indexes.map((item) => ({
-        ...item,
-        name: normalizeCodeName(item.code, item.name),
-      })),
-      tickers: parsed.tickers.map((item) => ({
-        ...item,
-        name: normalizeCodeName(item.code, item.name),
-      })),
-      intradayByCode: parsed.intradayByCode,
-      updatedAt: parsed.updatedAt,
-    }
-  } catch {
-    return null
-  }
-}
+const TICKER_SEEDS: MarketTickerQuote[] = [
+  { code: '600519', name: 'Kweichow Moutai', price: null, changePct: null },
+  { code: '601318', name: 'Ping An', price: null, changePct: null },
+  { code: '000858', name: 'Wuliangye', price: null, changePct: null },
+  { code: '300750', name: 'CATL', price: null, changePct: null },
+  { code: '002594', name: 'BYD', price: null, changePct: null },
+  { code: '601398', name: 'ICBC', price: null, changePct: null },
+  { code: '688981', name: 'SMIC', price: null, changePct: null },
+  { code: '000333', name: 'Midea', price: null, changePct: null },
+]
 
-function writeSnapshot(snapshot: MarketSnapshot) {
-  localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot))
+function hasRenderableData(
+  state: Pick<MarketDataState, 'marketCards' | 'importantCards' | 'tickerStrip' | 'seriesByCode'>,
+) {
+  const hasMarketPrice = state.marketCards.some((card) => card.price !== null)
+  const hasImportantPrice = state.importantCards.some((card) => card.price !== null)
+  const hasTickerPrice = state.tickerStrip.some((item) => item.price !== null)
+  const hasSeries = Object.values(state.seriesByCode).some((series) => series.points.length > 0)
+  return hasMarketPrice || hasImportantPrice || hasTickerPrice || hasSeries
 }
 
 export function useMarketData() {
-  const [state, setState] = useState<MarketDataState>(() => {
-    const snapshot = readSnapshot()
-    if (!snapshot) {
-      return {
-        indexes: [],
-        tickers: [],
-        intradayByCode: {},
-        loading: true,
-        stale: false,
-        updatedAt: null,
-      }
-    }
-    return {
-      indexes: snapshot.indexes,
-      tickers: snapshot.tickers,
-      intradayByCode: snapshot.intradayByCode,
-      loading: true,
-      stale: true,
-      updatedAt: snapshot.updatedAt,
-    }
+  const [state, setState] = useState<MarketDataState>({
+    marketCards: [],
+    importantCards: [],
+    tickerStrip: TICKER_SEEDS,
+    seriesByCode: {},
+    loading: true,
+    stale: false,
+    updatedAt: null,
+    error: null,
   })
 
   useEffect(() => {
     let isActive = true
+    let syncInFlight = false
 
     const sync = async () => {
-      const [indexesResult, tickersResult, intradayResult] = await Promise.allSettled([
-        fetchMarketIndexes(),
-        fetchMarketTickers(),
-        fetchAllIndexIntradayCurves(),
-      ])
-
-      if (!isActive) {
+      if (syncInFlight) {
         return
       }
 
-      setState((previous) => {
-        const nextIndexes =
-          indexesResult.status === 'fulfilled'
-            ? indexesResult.value.map((item) => {
-                const oldTrend =
-                  previous.indexes.find((prev) => prev.code === item.code)?.trend ?? []
-                const trend = [...oldTrend, item.price].slice(-MAX_TREND_POINTS)
-                return {
-                  ...item,
-                  trend,
-                }
-              })
-            : previous.indexes
-
-        const nextTickers =
-          tickersResult.status === 'fulfilled'
-            ? tickersResult.value
-            : previous.tickers
-
-        const nextIntradayByCode =
-          intradayResult.status === 'fulfilled'
-            ? Object.entries(intradayResult.value).reduce<MarketIntradayMap>(
-                (acc, [code, points]) => {
-                  acc[code] =
-                    points.length > 0 ? points : previous.intradayByCode[code] ?? []
-                  return acc
-                },
-                { ...previous.intradayByCode },
-              )
-            : previous.intradayByCode
-
-        const hasFresh =
-          indexesResult.status === 'fulfilled' ||
-          tickersResult.status === 'fulfilled' ||
-          intradayResult.status === 'fulfilled'
-
-        const nextUpdatedAt = hasFresh
-          ? new Date().toISOString()
-          : previous.updatedAt ?? null
-
-        if (hasFresh) {
-          writeSnapshot({
-            indexes: nextIndexes,
-            tickers: nextTickers,
-            intradayByCode: nextIntradayByCode,
-            updatedAt: nextUpdatedAt ?? new Date().toISOString(),
-          })
+      syncInFlight = true
+      try {
+        const payload = await fetchHomeMarketPayload()
+        if (!isActive) {
+          return
         }
 
-        return {
-          indexes: nextIndexes,
-          tickers: nextTickers,
-          intradayByCode: nextIntradayByCode,
+        setState({
+          marketCards: payload.marketCards,
+          importantCards: payload.importantCards,
+          tickerStrip: payload.tickerStrip.length > 0 ? payload.tickerStrip : TICKER_SEEDS,
+          seriesByCode: payload.seriesByCode,
           loading: false,
-          stale:
-            !hasFresh &&
-            (nextIndexes.length > 0 ||
-              nextTickers.length > 0 ||
-              Object.keys(nextIntradayByCode).length > 0),
-          updatedAt: nextUpdatedAt,
+          stale: false,
+          updatedAt: payload.updatedAt,
+          error: null,
+        })
+      } catch (error) {
+        if (!isActive) {
+          return
         }
-      })
+
+        const errorMessage = error instanceof Error ? error.message : 'Market API unavailable'
+        setState((previous) => {
+          const renderable = hasRenderableData(previous)
+          return {
+            ...previous,
+            tickerStrip: previous.tickerStrip.length > 0 ? previous.tickerStrip : TICKER_SEEDS,
+            loading: false,
+            stale: renderable,
+            error: renderable ? null : errorMessage,
+          }
+        })
+      } finally {
+        syncInFlight = false
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void sync()
+      }
+    }
+
+    const handleWindowFocus = () => {
+      void sync()
     }
 
     void sync()
-    const timer = window.setInterval(() => {
+    const marketTimer = window.setInterval(() => {
       void sync()
     }, POLL_INTERVAL_MS)
 
+    window.addEventListener('focus', handleWindowFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       isActive = false
-      window.clearInterval(timer)
+      window.clearInterval(marketTimer)
+      window.removeEventListener('focus', handleWindowFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 

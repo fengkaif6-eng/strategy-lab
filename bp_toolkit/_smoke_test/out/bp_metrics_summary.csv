@@ -1,0 +1,2 @@
+﻿signal_name,signals_path,yields_path,execution_delay_bars,fee_bps_per_side,stop_loss_bp,cumulative_return_bp,annual_return_bp,annual_vol_bp,sharpe,max_drawdown_ratio,max_drawdown_bp
+signal,C:\Users\18884\Desktop\vector_frame\bp_toolkit\_smoke_test\signals.csv,C:\Users\18884\Desktop\vector_frame\bp_toolkit\_smoke_test\yields.csv,1,0.0,,-1.9999999999999574,-125.19396424665597,23.812952804511085,-5.257389340768333,-0.00029999999999996696,-2.9999999999996696

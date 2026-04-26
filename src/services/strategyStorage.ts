@@ -1,162 +1,182 @@
-import { seedStrategies } from '../data/seedStrategies'
 import type {
   BacktestStrategyRecord,
   LiveStrategyRecord,
+  ThirdPartyStrategyRecord,
   StrategyChannel,
   StrategyCollection,
   StrategyRecord,
 } from '../types/strategy'
+import { apiJson } from './apiBase'
+import { sanitizeStrategyCollection, sanitizeStrategyRecord } from '../utils/strategyTextSanitizer'
 
-const STORAGE_KEYS = {
-  backtest: 'strategy-lab/backtest',
-  live: 'strategy-lab/live',
-} as const
+const EMPTY_STRATEGY_COLLECTION: StrategyCollection = {
+  backtest: [],
+  live: [],
+  thirdparty: [],
+}
+
+let lastSuccessfulCollection: StrategyCollection | null = null
 
 function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
-function getSeedByChannel(channel: 'backtest'): BacktestStrategyRecord[]
-function getSeedByChannel(channel: 'live'): LiveStrategyRecord[]
-function getSeedByChannel(channel: StrategyChannel) {
-  return deepClone(seedStrategies[channel])
-}
-
-function readStorage<T>(key: string): T | null {
-  const raw = localStorage.getItem(key)
-  if (!raw) {
-    return null
-  }
-
-  try {
-    return JSON.parse(raw) as T
-  } catch {
-    localStorage.removeItem(key)
-    return null
-  }
-}
-
-function writeStorage<T>(key: string, data: T) {
-  localStorage.setItem(key, JSON.stringify(data))
-}
-
 function normalizeBacktest(record: BacktestStrategyRecord): BacktestStrategyRecord {
-  return {
+  return sanitizeStrategyRecord({
     ...record,
     detail: {
       ...record.detail,
-      attachments: Array.isArray(record.detail.attachments)
-        ? record.detail.attachments
-        : [],
+      attachments: Array.isArray(record.detail.attachments) ? record.detail.attachments : [],
     },
-  }
+  })
 }
 
 function normalizeLive(record: LiveStrategyRecord): LiveStrategyRecord {
-  return {
+  return sanitizeStrategyRecord({
     ...record,
     detail: {
       ...record.detail,
-      attachments: Array.isArray(record.detail.attachments)
-        ? record.detail.attachments
-        : [],
+      attachments: Array.isArray(record.detail.attachments) ? record.detail.attachments : [],
     },
+  })
+}
+
+function normalizeThirdParty(record: ThirdPartyStrategyRecord): ThirdPartyStrategyRecord {
+  return sanitizeStrategyRecord({
+    ...record,
+    detail: {
+      ...record.detail,
+      attachments: Array.isArray(record.detail.attachments) ? record.detail.attachments : [],
+    },
+  })
+}
+
+function normalizeCollection(payload: Partial<StrategyCollection> | null | undefined): StrategyCollection {
+  return sanitizeStrategyCollection({
+    backtest: Array.isArray(payload?.backtest)
+      ? payload.backtest.map((item) => normalizeBacktest(item as BacktestStrategyRecord))
+      : [],
+    live: Array.isArray(payload?.live)
+      ? payload.live.map((item) => normalizeLive(item as LiveStrategyRecord))
+      : [],
+    thirdparty: Array.isArray(payload?.thirdparty)
+      ? payload.thirdparty.map((item) => normalizeThirdParty(item as ThirdPartyStrategyRecord))
+      : [],
+  })
+}
+
+function rememberLatest(collection: StrategyCollection): StrategyCollection {
+  const cloned = deepClone(collection)
+  lastSuccessfulCollection = cloned
+  return cloned
+}
+
+function getFallbackCollection(): StrategyCollection {
+  if (lastSuccessfulCollection) {
+    return deepClone(lastSuccessfulCollection)
+  }
+  return deepClone(EMPTY_STRATEGY_COLLECTION)
+}
+
+export async function loadAllStrategies(): Promise<StrategyCollection> {
+  try {
+    const response = await apiJson<StrategyCollection>('/api/strategies')
+    return rememberLatest(normalizeCollection(response))
+  } catch {
+    return getFallbackCollection()
   }
 }
 
-export function loadStrategies(channel: 'backtest'): BacktestStrategyRecord[]
-export function loadStrategies(channel: 'live'): LiveStrategyRecord[]
-export function loadStrategies(channel: StrategyChannel) {
+export async function loadStrategies(channel: 'backtest'): Promise<BacktestStrategyRecord[]>
+export async function loadStrategies(channel: 'live'): Promise<LiveStrategyRecord[]>
+export async function loadStrategies(channel: 'thirdparty'): Promise<ThirdPartyStrategyRecord[]>
+export async function loadStrategies(channel: StrategyChannel): Promise<StrategyRecord[]> {
+  const all = await loadAllStrategies()
   if (channel === 'backtest') {
-    const key = STORAGE_KEYS.backtest
-    const fromStorage = readStorage<BacktestStrategyRecord[]>(key)
-    if (fromStorage) {
-      const normalized = fromStorage.map(normalizeBacktest)
-      writeStorage(key, normalized)
-      return normalized
-    }
-    const seed = getSeedByChannel(channel).map(normalizeBacktest)
-    writeStorage(key, seed)
-    return seed
+    return all.backtest
   }
-
-  const key = STORAGE_KEYS.live
-  const fromStorage = readStorage<LiveStrategyRecord[]>(key)
-  if (fromStorage) {
-    const normalized = fromStorage.map(normalizeLive)
-    writeStorage(key, normalized)
-    return normalized
+  if (channel === 'live') {
+    return all.live
   }
-  const seed = getSeedByChannel(channel).map(normalizeLive)
-  writeStorage(key, seed)
-  return seed
+  return all.thirdparty
 }
 
-export function loadAllStrategies(): StrategyCollection {
-  return {
-    backtest: loadStrategies('backtest'),
-    live: loadStrategies('live'),
+export async function upsertStrategy(strategy: StrategyRecord): Promise<StrategyRecord[]> {
+  const response = await apiJson<StrategyCollection>('/api/admin/strategies', {
+    method: 'POST',
+    body: JSON.stringify({ strategy }),
+  })
+  const normalized = rememberLatest(normalizeCollection(response))
+  if (strategy.channel === 'backtest') {
+    return normalized.backtest
   }
+  if (strategy.channel === 'live') {
+    return normalized.live
+  }
+  return normalized.thirdparty
 }
 
-export function saveStrategies(
+export async function moveStrategy(
+  fromChannel: StrategyChannel,
+  toChannel: StrategyChannel,
+  strategyId: string,
+): Promise<StrategyCollection> {
+  const response = await apiJson<StrategyCollection>('/api/admin/strategies/move', {
+    method: 'POST',
+    body: JSON.stringify({
+      fromChannel,
+      toChannel,
+      strategyId,
+    }),
+  })
+  return rememberLatest(normalizeCollection(response))
+}
+
+export async function deleteStrategy(
+  channel: StrategyChannel,
+  id: string,
+): Promise<StrategyRecord[]> {
+  const encodedChannel = encodeURIComponent(channel)
+  const encodedId = encodeURIComponent(id)
+  const response = await apiJson<StrategyCollection>(
+    `/api/admin/strategies/${encodedChannel}/${encodedId}`,
+    {
+      method: 'DELETE',
+    },
+  )
+  const normalized = rememberLatest(normalizeCollection(response))
+  if (channel === 'backtest') {
+    return normalized.backtest
+  }
+  if (channel === 'live') {
+    return normalized.live
+  }
+  return normalized.thirdparty
+}
+
+export async function saveStrategies(
   channel: 'backtest',
   strategies: BacktestStrategyRecord[],
-): void
-export function saveStrategies(
+): Promise<void>
+export async function saveStrategies(
   channel: 'live',
   strategies: LiveStrategyRecord[],
-): void
-export function saveStrategies(
+): Promise<void>
+export async function saveStrategies(
+  channel: 'thirdparty',
+  strategies: ThirdPartyStrategyRecord[],
+): Promise<void>
+export async function saveStrategies(
   channel: StrategyChannel,
-  strategies: BacktestStrategyRecord[] | LiveStrategyRecord[],
-) {
-  if (channel === 'backtest') {
-    writeStorage(STORAGE_KEYS.backtest, strategies as BacktestStrategyRecord[])
-    return
-  }
-  writeStorage(STORAGE_KEYS.live, strategies as LiveStrategyRecord[])
-}
-
-export function upsertStrategy(strategy: StrategyRecord): StrategyRecord[] {
-  if (strategy.channel === 'backtest') {
-    const current = loadStrategies('backtest')
-    const normalized = normalizeBacktest(strategy)
-    const index = current.findIndex((item) => item.id === normalized.id)
-    if (index >= 0) {
-      current[index] = normalized
-    } else {
-      current.unshift(normalized)
-    }
-    saveStrategies('backtest', current)
-    return current
-  }
-
-  const current = loadStrategies('live')
-  const normalized = normalizeLive(strategy)
-  const index = current.findIndex((item) => item.id === normalized.id)
-  if (index >= 0) {
-    current[index] = normalized
-  } else {
-    current.unshift(normalized)
-  }
-  saveStrategies('live', current)
-  return current
-}
-
-export function deleteStrategy(channel: StrategyChannel, id: string): StrategyRecord[] {
-  if (channel === 'backtest') {
-    const next = loadStrategies(channel).filter((item) => item.id !== id)
-    saveStrategies(channel, next)
-    return next
-  }
-
-  const next = loadStrategies(channel).filter((item) => item.id !== id)
-  saveStrategies(channel, next)
-  return next
+  strategies: BacktestStrategyRecord[] | LiveStrategyRecord[] | ThirdPartyStrategyRecord[],
+): Promise<void> {
+  const response = await apiJson<StrategyCollection>(`/api/admin/strategies/${channel}`, {
+    method: 'PUT',
+    body: JSON.stringify({ strategies }),
+  })
+  rememberLatest(normalizeCollection(response))
 }
 
 export function resetStorage() {
-  localStorage.removeItem(STORAGE_KEYS.backtest)
-  localStorage.removeItem(STORAGE_KEYS.live)
+  lastSuccessfulCollection = null
 }

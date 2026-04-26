@@ -1,0 +1,1508 @@
+{
+  "backtest": [
+    {
+      "id": "bt-001",
+      "name": "沪深300趋势动量",
+      "channel": "backtest",
+      "author": "量研团队A",
+      "tags": [
+        "趋势",
+        "中频",
+        "指数增强"
+      ],
+      "riskLevel": "medium",
+      "status": "active",
+      "updatedAt": "2026-03-22",
+      "summary": "结合均线趋势与行业相对强度，在回撤控制下做指数增强。",
+      "metrics": {
+        "annualReturn": 0.2486,
+        "sharpe": 1.82,
+        "maxDrawdown": -0.082,
+        "winRate": 0.625,
+        "tradeCount": 156,
+        "volatility": 0.154
+      },
+      "detail": {
+        "description": "策略在指数上行阶段保持高仓位，在震荡阶段自动收缩仓位并提升防御资产占比。",
+        "logic": "20日与60日均线判定趋势，叠加行业轮动强度排序，每周调仓。",
+        "params": {
+          "trendWindow": 20,
+          "rebalanceFreq": "weekly",
+          "stopLoss": "6%",
+          "maxHolding": 12
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.03
+          },
+          {
+            "date": "2025-06",
+            "value": 1.07
+          },
+          {
+            "date": "2025-07",
+            "value": 1.06
+          },
+          {
+            "date": "2025-08",
+            "value": 1.12
+          },
+          {
+            "date": "2025-09",
+            "value": 1.11
+          },
+          {
+            "date": "2025-10",
+            "value": 1.16
+          },
+          {
+            "date": "2025-11",
+            "value": 1.2
+          },
+          {
+            "date": "2025-12",
+            "value": 1.19
+          },
+          {
+            "date": "2026-01",
+            "value": 1.24
+          },
+          {
+            "date": "2026-02",
+            "value": 1.27
+          },
+          {
+            "date": "2026-03",
+            "value": 1.29
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.012
+          },
+          {
+            "date": "2025-06",
+            "value": -0.018
+          },
+          {
+            "date": "2025-07",
+            "value": -0.026
+          },
+          {
+            "date": "2025-08",
+            "value": -0.015
+          },
+          {
+            "date": "2025-09",
+            "value": -0.021
+          },
+          {
+            "date": "2025-10",
+            "value": -0.012
+          },
+          {
+            "date": "2025-11",
+            "value": -0.01
+          },
+          {
+            "date": "2025-12",
+            "value": -0.022
+          },
+          {
+            "date": "2026-01",
+            "value": -0.013
+          },
+          {
+            "date": "2026-02",
+            "value": -0.008
+          },
+          {
+            "date": "2026-03",
+            "value": -0.006
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.03
+          },
+          {
+            "month": "2025-05",
+            "return": 0.04
+          },
+          {
+            "month": "2025-06",
+            "return": -0.01
+          },
+          {
+            "month": "2025-07",
+            "return": 0.06
+          },
+          {
+            "month": "2025-08",
+            "return": -0.008
+          },
+          {
+            "month": "2025-09",
+            "return": 0.044
+          },
+          {
+            "month": "2025-10",
+            "return": 0.035
+          },
+          {
+            "month": "2025-11",
+            "return": -0.012
+          },
+          {
+            "month": "2025-12",
+            "return": 0.041
+          },
+          {
+            "month": "2026-01",
+            "return": 0.024
+          },
+          {
+            "month": "2026-02",
+            "return": 0.018
+          },
+          {
+            "month": "2026-03",
+            "return": 0.016
+          }
+        ],
+        "riskNotes": [
+          "对快速反转行情敏感",
+          "行业集中度上限 30%",
+          "极端波动日可能降低仓位"
+        ],
+        "attachments": []
+      }
+    },
+    {
+      "id": "bt-002",
+      "name": "小市值质量轮动",
+      "channel": "backtest",
+      "author": "量研团队B",
+      "tags": [
+        "轮动",
+        "小盘",
+        "财务因子"
+      ],
+      "riskLevel": "high",
+      "status": "active",
+      "updatedAt": "2026-03-20",
+      "summary": "在小盘股池内筛选高ROE低负债标的，月度换仓。",
+      "metrics": {
+        "annualReturn": 0.312,
+        "sharpe": 1.58,
+        "maxDrawdown": -0.134,
+        "winRate": 0.58,
+        "tradeCount": 192,
+        "volatility": 0.209
+      },
+      "detail": {
+        "description": "高弹性策略，通过基本面质量过滤提升小盘股组合的稳定性与持续性。",
+        "logic": "PE分位过滤 + ROE排名 + 现金流稳定度打分，每月首个交易日调仓。",
+        "params": {
+          "topN": 20,
+          "rebalanceFreq": "monthly",
+          "roeThreshold": "12%",
+          "turnoverCap": "35%"
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.05
+          },
+          {
+            "date": "2025-06",
+            "value": 1.08
+          },
+          {
+            "date": "2025-07",
+            "value": 1.13
+          },
+          {
+            "date": "2025-08",
+            "value": 1.1
+          },
+          {
+            "date": "2025-09",
+            "value": 1.18
+          },
+          {
+            "date": "2025-10",
+            "value": 1.22
+          },
+          {
+            "date": "2025-11",
+            "value": 1.2
+          },
+          {
+            "date": "2025-12",
+            "value": 1.26
+          },
+          {
+            "date": "2026-01",
+            "value": 1.31
+          },
+          {
+            "date": "2026-02",
+            "value": 1.34
+          },
+          {
+            "date": "2026-03",
+            "value": 1.36
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.015
+          },
+          {
+            "date": "2025-06",
+            "value": -0.022
+          },
+          {
+            "date": "2025-07",
+            "value": -0.018
+          },
+          {
+            "date": "2025-08",
+            "value": -0.043
+          },
+          {
+            "date": "2025-09",
+            "value": -0.03
+          },
+          {
+            "date": "2025-10",
+            "value": -0.026
+          },
+          {
+            "date": "2025-11",
+            "value": -0.041
+          },
+          {
+            "date": "2025-12",
+            "value": -0.028
+          },
+          {
+            "date": "2026-01",
+            "value": -0.024
+          },
+          {
+            "date": "2026-02",
+            "value": -0.02
+          },
+          {
+            "date": "2026-03",
+            "value": -0.018
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.05
+          },
+          {
+            "month": "2025-05",
+            "return": 0.028
+          },
+          {
+            "month": "2025-06",
+            "return": 0.044
+          },
+          {
+            "month": "2025-07",
+            "return": -0.021
+          },
+          {
+            "month": "2025-08",
+            "return": 0.071
+          },
+          {
+            "month": "2025-09",
+            "return": 0.034
+          },
+          {
+            "month": "2025-10",
+            "return": -0.017
+          },
+          {
+            "month": "2025-11",
+            "return": 0.052
+          },
+          {
+            "month": "2025-12",
+            "return": 0.037
+          },
+          {
+            "month": "2026-01",
+            "return": 0.019
+          },
+          {
+            "month": "2026-02",
+            "return": 0.016
+          },
+          {
+            "month": "2026-03",
+            "return": 0.015
+          }
+        ],
+        "riskNotes": [
+          "高换手导致冲击成本增加",
+          "流动性约束需严格执行",
+          "风格切换时波动较大"
+        ],
+        "attachments": []
+      }
+    },
+    {
+      "id": "bt-003",
+      "name": "防御红利低波",
+      "channel": "backtest",
+      "author": "量研团队C",
+      "tags": [
+        "红利",
+        "低波",
+        "稳健"
+      ],
+      "riskLevel": "low",
+      "status": "paused",
+      "updatedAt": "2026-03-18",
+      "summary": "选择高分红稳定现金流企业，强调组合波动控制。",
+      "metrics": {
+        "annualReturn": 0.146,
+        "sharpe": 1.36,
+        "maxDrawdown": -0.058,
+        "winRate": 0.67,
+        "tradeCount": 84,
+        "volatility": 0.102
+      },
+      "detail": {
+        "description": "以低波因子和分红持续性为核心，适合震荡市环境中的防御型配置。",
+        "logic": "股息率排名 + 低波打分 + 现金流覆盖率过滤，双月调仓。",
+        "params": {
+          "rebalanceFreq": "bi-monthly",
+          "dividendYieldMin": "3%",
+          "maxSingleWeight": "10%"
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.015
+          },
+          {
+            "date": "2025-06",
+            "value": 1.028
+          },
+          {
+            "date": "2025-07",
+            "value": 1.032
+          },
+          {
+            "date": "2025-08",
+            "value": 1.045
+          },
+          {
+            "date": "2025-09",
+            "value": 1.052
+          },
+          {
+            "date": "2025-10",
+            "value": 1.061
+          },
+          {
+            "date": "2025-11",
+            "value": 1.074
+          },
+          {
+            "date": "2025-12",
+            "value": 1.078
+          },
+          {
+            "date": "2026-01",
+            "value": 1.089
+          },
+          {
+            "date": "2026-02",
+            "value": 1.097
+          },
+          {
+            "date": "2026-03",
+            "value": 1.106
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.006
+          },
+          {
+            "date": "2025-06",
+            "value": -0.008
+          },
+          {
+            "date": "2025-07",
+            "value": -0.01
+          },
+          {
+            "date": "2025-08",
+            "value": -0.007
+          },
+          {
+            "date": "2025-09",
+            "value": -0.009
+          },
+          {
+            "date": "2025-10",
+            "value": -0.008
+          },
+          {
+            "date": "2025-11",
+            "value": -0.007
+          },
+          {
+            "date": "2025-12",
+            "value": -0.011
+          },
+          {
+            "date": "2026-01",
+            "value": -0.009
+          },
+          {
+            "date": "2026-02",
+            "value": -0.008
+          },
+          {
+            "date": "2026-03",
+            "value": -0.007
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.015
+          },
+          {
+            "month": "2025-05",
+            "return": 0.013
+          },
+          {
+            "month": "2025-06",
+            "return": 0.004
+          },
+          {
+            "month": "2025-07",
+            "return": 0.012
+          },
+          {
+            "month": "2025-08",
+            "return": 0.007
+          },
+          {
+            "month": "2025-09",
+            "return": 0.009
+          },
+          {
+            "month": "2025-10",
+            "return": 0.012
+          },
+          {
+            "month": "2025-11",
+            "return": 0.004
+          },
+          {
+            "month": "2025-12",
+            "return": 0.01
+          },
+          {
+            "month": "2026-01",
+            "return": 0.007
+          },
+          {
+            "month": "2026-02",
+            "return": 0.008
+          },
+          {
+            "month": "2026-03",
+            "return": 0.006
+          }
+        ],
+        "riskNotes": [
+          "上涨行情中可能跑输成长风格",
+          "组合集中在高分红行业",
+          "分红政策变化影响较大"
+        ],
+        "attachments": []
+      }
+    },
+    {
+      "id": "bt-004",
+      "name": "AI情绪择时",
+      "channel": "backtest",
+      "author": "量研团队D",
+      "tags": [
+        "择时",
+        "情绪",
+        "事件驱动"
+      ],
+      "riskLevel": "high",
+      "status": "active",
+      "updatedAt": "2026-03-23",
+      "summary": "融合新闻情绪与市场宽度信号进行仓位择时。",
+      "metrics": {
+        "annualReturn": 0.287,
+        "sharpe": 1.69,
+        "maxDrawdown": -0.112,
+        "winRate": 0.61,
+        "tradeCount": 173,
+        "volatility": 0.194
+      },
+      "detail": {
+        "description": "通过文本情绪指数与盘口宽度数据驱动仓位动态调整，在风险事件前主动降杠杆。",
+        "logic": "日度情绪指数 + 市场宽度阈值 + 成交额扩散模型，日内一次调整。",
+        "params": {
+          "sentimentLookback": 5,
+          "breadthThreshold": 0.56,
+          "leverageCap": 1.2
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.04
+          },
+          {
+            "date": "2025-06",
+            "value": 1.09
+          },
+          {
+            "date": "2025-07",
+            "value": 1.07
+          },
+          {
+            "date": "2025-08",
+            "value": 1.13
+          },
+          {
+            "date": "2025-09",
+            "value": 1.18
+          },
+          {
+            "date": "2025-10",
+            "value": 1.17
+          },
+          {
+            "date": "2025-11",
+            "value": 1.22
+          },
+          {
+            "date": "2025-12",
+            "value": 1.25
+          },
+          {
+            "date": "2026-01",
+            "value": 1.24
+          },
+          {
+            "date": "2026-02",
+            "value": 1.3
+          },
+          {
+            "date": "2026-03",
+            "value": 1.33
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.012
+          },
+          {
+            "date": "2025-06",
+            "value": -0.017
+          },
+          {
+            "date": "2025-07",
+            "value": -0.038
+          },
+          {
+            "date": "2025-08",
+            "value": -0.021
+          },
+          {
+            "date": "2025-09",
+            "value": -0.015
+          },
+          {
+            "date": "2025-10",
+            "value": -0.032
+          },
+          {
+            "date": "2025-11",
+            "value": -0.019
+          },
+          {
+            "date": "2025-12",
+            "value": -0.016
+          },
+          {
+            "date": "2026-01",
+            "value": -0.025
+          },
+          {
+            "date": "2026-02",
+            "value": -0.014
+          },
+          {
+            "date": "2026-03",
+            "value": -0.011
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.04
+          },
+          {
+            "month": "2025-05",
+            "return": 0.048
+          },
+          {
+            "month": "2025-06",
+            "return": -0.02
+          },
+          {
+            "month": "2025-07",
+            "return": 0.057
+          },
+          {
+            "month": "2025-08",
+            "return": 0.044
+          },
+          {
+            "month": "2025-09",
+            "return": -0.012
+          },
+          {
+            "month": "2025-10",
+            "return": 0.046
+          },
+          {
+            "month": "2025-11",
+            "return": 0.029
+          },
+          {
+            "month": "2025-12",
+            "return": -0.009
+          },
+          {
+            "month": "2026-01",
+            "return": 0.051
+          },
+          {
+            "month": "2026-02",
+            "return": 0.023
+          },
+          {
+            "month": "2026-03",
+            "return": 0.018
+          }
+        ],
+        "riskNotes": [
+          "情绪模型存在噪声风险",
+          "突发事件可能导致滑点放大",
+          "需监控模型漂移"
+        ],
+        "attachments": []
+      }
+    }
+  ],
+  "live": [
+    {
+      "id": "lv-101",
+      "name": "沪深300趋势动量-实盘",
+      "channel": "live",
+      "author": "量研团队A",
+      "tags": [
+        "趋势",
+        "实盘",
+        "指数增强"
+      ],
+      "riskLevel": "medium",
+      "status": "active",
+      "updatedAt": "2026-03-24",
+      "summary": "回测策略已上线实盘，主要执行指数增强与防御切换。",
+      "metrics": {
+        "totalReturn": 0.084,
+        "alpha": 0.031,
+        "maxDrawdown": -0.037,
+        "runningDays": 126,
+        "positionCount": 11,
+        "monthlyWinRate": 0.67
+      },
+      "detail": {
+        "description": "在真实交易中执行周频调仓，并结合风控阈值做仓位调整。",
+        "logic": "趋势判断 + 行业轮动 + 盘中风控阈值触发。",
+        "params": {
+          "rebalanceFreq": "weekly",
+          "riskGuard": "VIX-like > 24",
+          "maxHolding": 12
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.01
+          },
+          {
+            "date": "2025-06",
+            "value": 1.015
+          },
+          {
+            "date": "2025-07",
+            "value": 1.024
+          },
+          {
+            "date": "2025-08",
+            "value": 1.03
+          },
+          {
+            "date": "2025-09",
+            "value": 1.038
+          },
+          {
+            "date": "2025-10",
+            "value": 1.041
+          },
+          {
+            "date": "2025-11",
+            "value": 1.056
+          },
+          {
+            "date": "2025-12",
+            "value": 1.063
+          },
+          {
+            "date": "2026-01",
+            "value": 1.071
+          },
+          {
+            "date": "2026-02",
+            "value": 1.08
+          },
+          {
+            "date": "2026-03",
+            "value": 1.084
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.006
+          },
+          {
+            "date": "2025-06",
+            "value": -0.01
+          },
+          {
+            "date": "2025-07",
+            "value": -0.008
+          },
+          {
+            "date": "2025-08",
+            "value": -0.013
+          },
+          {
+            "date": "2025-09",
+            "value": -0.009
+          },
+          {
+            "date": "2025-10",
+            "value": -0.012
+          },
+          {
+            "date": "2025-11",
+            "value": -0.009
+          },
+          {
+            "date": "2025-12",
+            "value": -0.011
+          },
+          {
+            "date": "2026-01",
+            "value": -0.01
+          },
+          {
+            "date": "2026-02",
+            "value": -0.008
+          },
+          {
+            "date": "2026-03",
+            "value": -0.007
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.01
+          },
+          {
+            "month": "2025-05",
+            "return": 0.005
+          },
+          {
+            "month": "2025-06",
+            "return": 0.009
+          },
+          {
+            "month": "2025-07",
+            "return": 0.006
+          },
+          {
+            "month": "2025-08",
+            "return": 0.008
+          },
+          {
+            "month": "2025-09",
+            "return": 0.003
+          },
+          {
+            "month": "2025-10",
+            "return": 0.015
+          },
+          {
+            "month": "2025-11",
+            "return": 0.007
+          },
+          {
+            "month": "2025-12",
+            "return": 0.008
+          },
+          {
+            "month": "2026-01",
+            "return": 0.009
+          },
+          {
+            "month": "2026-02",
+            "return": 0.004
+          },
+          {
+            "month": "2026-03",
+            "return": 0.003
+          }
+        ],
+        "riskNotes": [
+          "风控阈值触发后会降低持仓",
+          "成交量低时执行偏差上升"
+        ],
+        "attachments": []
+      }
+    },
+    {
+      "id": "lv-102",
+      "name": "中证500波段突破-实盘",
+      "channel": "live",
+      "author": "量研团队E",
+      "tags": [
+        "波段",
+        "突破",
+        "中盘"
+      ],
+      "riskLevel": "high",
+      "status": "active",
+      "updatedAt": "2026-03-23",
+      "summary": "中证500成分股波段突破策略，当前以成长行业为主。",
+      "metrics": {
+        "totalReturn": 0.126,
+        "alpha": 0.045,
+        "maxDrawdown": -0.064,
+        "runningDays": 168,
+        "positionCount": 14,
+        "monthlyWinRate": 0.58
+      },
+      "detail": {
+        "description": "适合趋势延续行情，仓位切换速度快，收益弹性较高。",
+        "logic": "20日新高突破 + 成交量确认 + ATR 止损机制。",
+        "params": {
+          "breakoutWindow": 20,
+          "atrStop": 2.1,
+          "maxHolding": 15
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.018
+          },
+          {
+            "date": "2025-06",
+            "value": 1.027
+          },
+          {
+            "date": "2025-07",
+            "value": 1.041
+          },
+          {
+            "date": "2025-08",
+            "value": 1.036
+          },
+          {
+            "date": "2025-09",
+            "value": 1.049
+          },
+          {
+            "date": "2025-10",
+            "value": 1.062
+          },
+          {
+            "date": "2025-11",
+            "value": 1.071
+          },
+          {
+            "date": "2025-12",
+            "value": 1.088
+          },
+          {
+            "date": "2026-01",
+            "value": 1.097
+          },
+          {
+            "date": "2026-02",
+            "value": 1.112
+          },
+          {
+            "date": "2026-03",
+            "value": 1.126
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.009
+          },
+          {
+            "date": "2025-06",
+            "value": -0.012
+          },
+          {
+            "date": "2025-07",
+            "value": -0.014
+          },
+          {
+            "date": "2025-08",
+            "value": -0.026
+          },
+          {
+            "date": "2025-09",
+            "value": -0.019
+          },
+          {
+            "date": "2025-10",
+            "value": -0.018
+          },
+          {
+            "date": "2025-11",
+            "value": -0.022
+          },
+          {
+            "date": "2025-12",
+            "value": -0.017
+          },
+          {
+            "date": "2026-01",
+            "value": -0.021
+          },
+          {
+            "date": "2026-02",
+            "value": -0.016
+          },
+          {
+            "date": "2026-03",
+            "value": -0.014
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.018
+          },
+          {
+            "month": "2025-05",
+            "return": 0.009
+          },
+          {
+            "month": "2025-06",
+            "return": 0.014
+          },
+          {
+            "month": "2025-07",
+            "return": -0.005
+          },
+          {
+            "month": "2025-08",
+            "return": 0.013
+          },
+          {
+            "month": "2025-09",
+            "return": 0.012
+          },
+          {
+            "month": "2025-10",
+            "return": 0.008
+          },
+          {
+            "month": "2025-11",
+            "return": 0.017
+          },
+          {
+            "month": "2025-12",
+            "return": 0.009
+          },
+          {
+            "month": "2026-01",
+            "return": 0.014
+          },
+          {
+            "month": "2026-02",
+            "return": 0.013
+          },
+          {
+            "month": "2026-03",
+            "return": 0.011
+          }
+        ],
+        "riskNotes": [
+          "突破失败会导致连续小亏",
+          "对成交量数据质量敏感"
+        ],
+        "attachments": []
+      }
+    },
+    {
+      "id": "lv-103",
+      "name": "行业轮动稳健组合-实盘",
+      "channel": "live",
+      "author": "量研团队F",
+      "tags": [
+        "行业轮动",
+        "稳健",
+        "低波"
+      ],
+      "riskLevel": "low",
+      "status": "paused",
+      "updatedAt": "2026-03-19",
+      "summary": "行业轮动稳健组合，当前处于策略维护窗口。",
+      "metrics": {
+        "totalReturn": 0.059,
+        "alpha": 0.018,
+        "maxDrawdown": -0.025,
+        "runningDays": 203,
+        "positionCount": 8,
+        "monthlyWinRate": 0.71
+      },
+      "detail": {
+        "description": "关注防御行业的轮动机会，保持较低波动和稳定收益曲线。",
+        "logic": "行业景气评分 + 波动率约束 + 组合风险预算。",
+        "params": {
+          "maxIndustryWeight": "20%",
+          "turnoverCap": "18%",
+          "rebalanceFreq": "weekly"
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.006
+          },
+          {
+            "date": "2025-06",
+            "value": 1.011
+          },
+          {
+            "date": "2025-07",
+            "value": 1.017
+          },
+          {
+            "date": "2025-08",
+            "value": 1.022
+          },
+          {
+            "date": "2025-09",
+            "value": 1.026
+          },
+          {
+            "date": "2025-10",
+            "value": 1.031
+          },
+          {
+            "date": "2025-11",
+            "value": 1.038
+          },
+          {
+            "date": "2025-12",
+            "value": 1.043
+          },
+          {
+            "date": "2026-01",
+            "value": 1.049
+          },
+          {
+            "date": "2026-02",
+            "value": 1.053
+          },
+          {
+            "date": "2026-03",
+            "value": 1.059
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.003
+          },
+          {
+            "date": "2025-06",
+            "value": -0.005
+          },
+          {
+            "date": "2025-07",
+            "value": -0.004
+          },
+          {
+            "date": "2025-08",
+            "value": -0.006
+          },
+          {
+            "date": "2025-09",
+            "value": -0.007
+          },
+          {
+            "date": "2025-10",
+            "value": -0.006
+          },
+          {
+            "date": "2025-11",
+            "value": -0.005
+          },
+          {
+            "date": "2025-12",
+            "value": -0.007
+          },
+          {
+            "date": "2026-01",
+            "value": -0.006
+          },
+          {
+            "date": "2026-02",
+            "value": -0.005
+          },
+          {
+            "date": "2026-03",
+            "value": -0.004
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.006
+          },
+          {
+            "month": "2025-05",
+            "return": 0.005
+          },
+          {
+            "month": "2025-06",
+            "return": 0.006
+          },
+          {
+            "month": "2025-07",
+            "return": 0.005
+          },
+          {
+            "month": "2025-08",
+            "return": 0.004
+          },
+          {
+            "month": "2025-09",
+            "return": 0.005
+          },
+          {
+            "month": "2025-10",
+            "return": 0.007
+          },
+          {
+            "month": "2025-11",
+            "return": 0.005
+          },
+          {
+            "month": "2025-12",
+            "return": 0.006
+          },
+          {
+            "month": "2026-01",
+            "return": 0.004
+          },
+          {
+            "month": "2026-02",
+            "return": 0.004
+          },
+          {
+            "month": "2026-03",
+            "return": 0.005
+          }
+        ],
+        "riskNotes": [
+          "暂停期间不进行新开仓",
+          "行业景气变化可能带来再平衡压力"
+        ],
+        "attachments": []
+      }
+    },
+    {
+      "id": "lv-104",
+      "name": "事件套利快反组合-实盘",
+      "channel": "live",
+      "author": "量研团队G",
+      "tags": [
+        "事件驱动",
+        "快反",
+        "套利"
+      ],
+      "riskLevel": "high",
+      "status": "active",
+      "updatedAt": "2026-03-24",
+      "summary": "针对公告事件与异动盘口的快反套利，注重执行质量。",
+      "metrics": {
+        "totalReturn": 0.097,
+        "alpha": 0.039,
+        "maxDrawdown": -0.051,
+        "runningDays": 97,
+        "positionCount": 9,
+        "monthlyWinRate": 0.62
+      },
+      "detail": {
+        "description": "以事件触发信号为主，持仓周期短，依赖高质量执行与风控。",
+        "logic": "公告情绪打分 + 异动成交量 + 盘口冲击成本模型。",
+        "params": {
+          "maxHoldingDays": 7,
+          "stopLoss": "4%",
+          "eventScoreThreshold": 0.72
+        },
+        "equityCurve": [
+          {
+            "date": "2025-04",
+            "value": 1
+          },
+          {
+            "date": "2025-05",
+            "value": 1.012
+          },
+          {
+            "date": "2025-06",
+            "value": 1.019
+          },
+          {
+            "date": "2025-07",
+            "value": 1.028
+          },
+          {
+            "date": "2025-08",
+            "value": 1.035
+          },
+          {
+            "date": "2025-09",
+            "value": 1.04
+          },
+          {
+            "date": "2025-10",
+            "value": 1.051
+          },
+          {
+            "date": "2025-11",
+            "value": 1.059
+          },
+          {
+            "date": "2025-12",
+            "value": 1.071
+          },
+          {
+            "date": "2026-01",
+            "value": 1.078
+          },
+          {
+            "date": "2026-02",
+            "value": 1.089
+          },
+          {
+            "date": "2026-03",
+            "value": 1.097
+          }
+        ],
+        "drawdownCurve": [
+          {
+            "date": "2025-04",
+            "value": 0
+          },
+          {
+            "date": "2025-05",
+            "value": -0.006
+          },
+          {
+            "date": "2025-06",
+            "value": -0.007
+          },
+          {
+            "date": "2025-07",
+            "value": -0.011
+          },
+          {
+            "date": "2025-08",
+            "value": -0.013
+          },
+          {
+            "date": "2025-09",
+            "value": -0.016
+          },
+          {
+            "date": "2025-10",
+            "value": -0.012
+          },
+          {
+            "date": "2025-11",
+            "value": -0.017
+          },
+          {
+            "date": "2025-12",
+            "value": -0.013
+          },
+          {
+            "date": "2026-01",
+            "value": -0.015
+          },
+          {
+            "date": "2026-02",
+            "value": -0.011
+          },
+          {
+            "date": "2026-03",
+            "value": -0.01
+          }
+        ],
+        "monthlyReturns": [
+          {
+            "month": "2025-04",
+            "return": 0.012
+          },
+          {
+            "month": "2025-05",
+            "return": 0.007
+          },
+          {
+            "month": "2025-06",
+            "return": 0.009
+          },
+          {
+            "month": "2025-07",
+            "return": 0.007
+          },
+          {
+            "month": "2025-08",
+            "return": 0.005
+          },
+          {
+            "month": "2025-09",
+            "return": 0.011
+          },
+          {
+            "month": "2025-10",
+            "return": 0.008
+          },
+          {
+            "month": "2025-11",
+            "return": 0.012
+          },
+          {
+            "month": "2025-12",
+            "return": 0.007
+          },
+          {
+            "month": "2026-01",
+            "return": 0.011
+          },
+          {
+            "month": "2026-02",
+            "return": 0.008
+          },
+          {
+            "month": "2026-03",
+            "return": 0.007
+          }
+        ],
+        "riskNotes": [
+          "事件拥挤时收益衰减明显",
+          "依赖盘口质量，需控制滑点"
+        ],
+        "attachments": []
+      }
+    }
+  ]
+}

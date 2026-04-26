@@ -1,25 +1,21 @@
-import type { AuthUser } from '../types/auth'
-
-interface StoredUser extends AuthUser {
-  password: string
-}
+import { apiJson } from './apiBase'
+import type {
+  AuthUser,
+  RegistrationPayload,
+  RegistrationRequest,
+  StrategyPermissionSet,
+} from '../types/auth'
+import type { StrategyChannel } from '../types/strategy'
 
 const STORAGE_KEYS = {
-  users: 'strategy-lab/auth/users',
   session: 'strategy-lab/auth/session',
 } as const
 
-const ADMIN_USER: StoredUser = {
-  id: 'admin-local',
-  username: 'admin',
-  role: 'admin',
-  token: 'admin-token-local',
-  registeredAt: '2026-03-24',
-  password: 'Admin@123456',
-}
-
 function readJson<T>(key: string, fallback: T): T {
-  const raw = localStorage.getItem(key)
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+  const raw = window.localStorage.getItem(key)
   if (!raw) {
     return fallback
   }
@@ -31,36 +27,14 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson<T>(key: string, value: T) {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
-function toPublicUser(user: StoredUser): AuthUser {
-  return {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-    token: user.token,
-    registeredAt: user.registeredAt,
+  if (typeof window === 'undefined') {
+    return
   }
+  window.localStorage.setItem(key, JSON.stringify(value))
 }
 
 function buildToken() {
   return `tk_${Math.random().toString(36).slice(2)}_${Date.now()}`
-}
-
-function getStoredUsers(): StoredUser[] {
-  const users = readJson<StoredUser[]>(STORAGE_KEYS.users, [])
-  const hasAdmin = users.some((item) => item.username === ADMIN_USER.username)
-  if (hasAdmin) {
-    return users
-  }
-  const merged = [ADMIN_USER, ...users]
-  writeJson(STORAGE_KEYS.users, merged)
-  return merged
-}
-
-function saveStoredUsers(users: StoredUser[]) {
-  writeJson(STORAGE_KEYS.users, users)
 }
 
 export function loadSession(): AuthUser | null {
@@ -71,61 +45,115 @@ function saveSession(user: AuthUser) {
   writeJson(STORAGE_KEYS.session, user)
 }
 
-export async function loginUser(
-  username: string,
-  password: string,
-): Promise<AuthUser> {
-  // TODO: replace with backend API call.
-  const users = getStoredUsers()
-  const found = users.find((item) => item.username === username.trim())
-  if (!found || found.password !== password) {
-    throw new Error('用户名或密码错误')
-  }
-  const session: AuthUser = {
-    ...toPublicUser(found),
-    token: buildToken(),
-  }
+export async function loginUser(username: string, password: string): Promise<AuthUser> {
+  const user = await apiJson<AuthUser>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  })
+  const session = { ...user, token: user.token || buildToken() }
   saveSession(session)
   return session
 }
 
-export async function registerUser(
-  username: string,
-  password: string,
+export async function registerUser(payload: RegistrationPayload): Promise<RegistrationRequest> {
+  return apiJson<RegistrationRequest>('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function listRegistrationRequests(): Promise<RegistrationRequest[]> {
+  return apiJson<RegistrationRequest[]>('/api/admin/requests')
+}
+
+export async function listManagedUsers(): Promise<AuthUser[]> {
+  return apiJson<AuthUser[]>('/api/admin/users')
+}
+
+export async function approveRegistrationRequest(
+  requestId: string,
+  permissions: StrategyPermissionSet,
 ): Promise<AuthUser> {
-  // TODO: replace with backend API call.
-  const trimmed = username.trim()
-  if (trimmed.length < 3) {
-    throw new Error('用户名至少 3 位')
-  }
-  if (password.length < 6) {
-    throw new Error('密码至少 6 位')
-  }
-  const users = getStoredUsers()
-  if (users.some((item) => item.username.toLowerCase() === trimmed.toLowerCase())) {
-    throw new Error('用户名已存在')
+  return apiJson<AuthUser>(`/api/admin/requests/${requestId}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ permissions }),
+  })
+}
+
+export async function rejectRegistrationRequest(requestId: string): Promise<void> {
+  await apiJson(`/api/admin/requests/${requestId}/reject`, {
+    method: 'POST',
+  })
+}
+
+export async function updateUserPermissions(
+  userId: string,
+  permissions: StrategyPermissionSet,
+): Promise<AuthUser> {
+  const user = await apiJson<AuthUser>(`/api/admin/users/${userId}/permissions`, {
+    method: 'PUT',
+    body: JSON.stringify({ permissions }),
+  })
+
+  const session = loadSession()
+  if (session?.id === user.id) {
+    saveSession({ ...user, token: session.token || user.token || buildToken() })
   }
 
-  const user: StoredUser = {
-    id: `usr_${Math.random().toString(36).slice(2, 10)}`,
-    username: trimmed,
-    role: 'user',
-    token: buildToken(),
-    registeredAt: new Date().toISOString().slice(0, 10),
-    password,
+  return user
+}
+
+export function hasChannelAccess(user: AuthUser | null, channel: StrategyChannel): boolean {
+  if (!user) {
+    return false
   }
-  const nextUsers = [...users, user]
-  saveStoredUsers(nextUsers)
-  const session = toPublicUser(user)
-  saveSession(session)
-  return session
+  if (user.role === 'admin') {
+    return true
+  }
+  const thirdPartyIds = Array.isArray(user.permissions.thirdPartyStrategyIds)
+    ? user.permissions.thirdPartyStrategyIds
+    : []
+  if (channel === 'backtest') {
+    return user.permissions.allowBacktest || user.permissions.backtestStrategyIds.length > 0
+  }
+  if (channel === 'live') {
+    return user.permissions.allowLive || user.permissions.liveStrategyIds.length > 0
+  }
+  return Boolean(user.permissions.allowThirdParty) || thirdPartyIds.length > 0
+}
+
+export function hasStrategyAccess(
+  user: AuthUser | null,
+  channel: StrategyChannel,
+  strategyId: string,
+): boolean {
+  if (!user) {
+    return false
+  }
+  if (user.role === 'admin') {
+    return true
+  }
+  const thirdPartyIds = Array.isArray(user.permissions.thirdPartyStrategyIds)
+    ? user.permissions.thirdPartyStrategyIds
+    : []
+  if (channel === 'backtest') {
+    return (
+      user.permissions.allowBacktest || user.permissions.backtestStrategyIds.includes(strategyId)
+    )
+  }
+  if (channel === 'live') {
+    return user.permissions.allowLive || user.permissions.liveStrategyIds.includes(strategyId)
+  }
+  return Boolean(user.permissions.allowThirdParty) || thirdPartyIds.includes(strategyId)
 }
 
 export function logoutUser() {
-  localStorage.removeItem(STORAGE_KEYS.session)
+  if (typeof window === 'undefined') {
+    return
+  }
+  window.localStorage.removeItem(STORAGE_KEYS.session)
 }
 
 export function resetAuthStorage() {
-  localStorage.removeItem(STORAGE_KEYS.users)
-  localStorage.removeItem(STORAGE_KEYS.session)
+  logoutUser()
 }

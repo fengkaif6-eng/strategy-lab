@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+akshare
+pandas
+numpy
+pyarrow
+pymongo
+python-multipart
+openpyxl

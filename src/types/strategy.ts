@@ -1,6 +1,7 @@
-export type StrategyChannel = 'backtest' | 'live'
+export type StrategyChannel = 'backtest' | 'live' | 'thirdparty'
 export type StrategyStatus = 'active' | 'paused' | 'archived'
 export type RiskLevel = 'low' | 'medium' | 'high'
+export type PerformanceMetricMode = 'standard' | 'bp'
 
 export interface CurvePoint {
   date: string
@@ -19,6 +20,10 @@ export interface StrategyAttachment {
   note?: string
   createdAt: string
   createdBy: string
+  sourceType?: 'url' | 'file'
+  fileName?: string
+  fileSize?: number
+  mimeType?: string
 }
 
 export interface StrategyDetail {
@@ -37,6 +42,7 @@ export interface StrategyBase {
   name: string
   channel: StrategyChannel
   author: string
+  showOnHome?: boolean
   tags: string[]
   riskLevel: RiskLevel
   status: StrategyStatus
@@ -48,18 +54,33 @@ export interface BacktestMetrics {
   annualReturn: number
   sharpe: number
   maxDrawdown: number
-  winRate: number
+  winRate?: number
   tradeCount: number
   volatility: number
+  runningDays?: number
+  totalReturn?: number
+  startDate?: string
+  performanceMode?: PerformanceMetricMode
+  cumulativeReturnBp?: number
+  maxDrawdownBp?: number
 }
 
 export interface LiveMetrics {
+  annualReturn?: number
+  sharpe?: number
+  winRate?: number
+  tradeCount?: number
   totalReturn: number
   alpha: number
   maxDrawdown: number
+  volatility?: number
   runningDays: number
+  startDate?: string
   positionCount: number
-  monthlyWinRate: number
+  monthlyWinRate?: number
+  performanceMode?: PerformanceMetricMode
+  cumulativeReturnBp?: number
+  maxDrawdownBp?: number
 }
 
 export interface BacktestStrategyRecord extends StrategyBase {
@@ -74,9 +95,19 @@ export interface LiveStrategyRecord extends StrategyBase {
   detail: StrategyDetail
 }
 
-export type StrategyRecord = BacktestStrategyRecord | LiveStrategyRecord
+export interface ThirdPartyStrategyRecord extends StrategyBase {
+  channel: 'thirdparty'
+  metrics: BacktestMetrics
+  detail: StrategyDetail
+}
+
+export type StrategyRecord =
+  | BacktestStrategyRecord
+  | LiveStrategyRecord
+  | ThirdPartyStrategyRecord
 
 export type StrategyCollection = {
   backtest: BacktestStrategyRecord[]
   live: LiveStrategyRecord[]
+  thirdparty: ThirdPartyStrategyRecord[]
 }

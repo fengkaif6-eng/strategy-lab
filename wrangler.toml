@@ -1,0 +1,10 @@
+name = "strategy-lab"
+compatibility_date = "2026-04-26"
+pages_build_output_dir = "dist"
+
+# After creating the KV namespace, add the real id values here:
+#
+# [[kv_namespaces]]
+# binding = "STRATEGY_LAB_STATE"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# preview_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

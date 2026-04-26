@@ -24,4 +24,12 @@ dist-ssr
 *.sw?
 
 .vercel
+.wrangler
 release
+.pytest_cache
+__pycache__
+*.pyc
+.codex-anchors
+tmp-compile
+tmp_*
+cd
